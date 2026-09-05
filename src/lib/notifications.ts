@@ -1,5 +1,6 @@
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { isNative } from "./capacitor";
+import { setStore } from "../store/app";
 
 export interface AlarmNotification {
   id: number;
@@ -113,10 +114,8 @@ export function startAlarmWatcher(
   reminders: { id: string; date: string; time: string; enabled: boolean; title: string; }[]
 ): () => void {
   if (isNative()) return () => {};
-  if (!("Notification" in window) || Notification.permission !== "granted") {
-    return () => {};
-  }
 
+  const canNotify = "Notification" in window && Notification.permission === "granted";
   let lastFired = new Date();
 
   const interval = setInterval(async () => {
@@ -128,11 +127,16 @@ export function startAlarmWatcher(
       time: `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`,
     };
 
+    // Fire the in-app ringing overlay even without notification permission —
+    // it does not depend on the Notifications API at all.
     for (const a of alarms) {
       if (!a.enabled) continue;
       if (a.hour === current.hour && a.minute === current.minute && now.getSeconds() < 2) {
         if (now.getTime() - lastFired.getTime() > 50_000) {
-          await showLocalNotification(`Alarm: ${a.label || "Alarm"}`, "Your alarm is ringing");
+          setStore("ringing", { kind: "alarm", id: a.id, title: a.label || "Alarm" });
+          if (canNotify) {
+            await showLocalNotification(`Alarm: ${a.label || "Alarm"}`, "Your alarm is ringing");
+          }
         }
       }
     }
@@ -141,7 +145,10 @@ export function startAlarmWatcher(
       if (!r.enabled) continue;
       if (r.date === current.date && r.time === current.time && now.getSeconds() < 2) {
         if (now.getTime() - lastFired.getTime() > 50_000) {
-          await showLocalNotification(`Reminder: ${r.title}`, "You have a reminder now");
+          setStore("ringing", { kind: "reminder", id: r.id, title: r.title });
+          if (canNotify) {
+            await showLocalNotification(`Reminder: ${r.title}`, "You have a reminder now");
+          }
         }
       }
     }

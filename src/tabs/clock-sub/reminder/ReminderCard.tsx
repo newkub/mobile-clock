@@ -1,5 +1,6 @@
 import { createSignal, For, Show } from "solid-js";
 import { Button } from "../../../components/Button";
+import { Switch } from "../../../components/Switch";
 import { type Reminder } from "../../../store/app";
 import { repeatLabels } from "./repeatLabels";
 
@@ -33,15 +34,11 @@ export function ReminderCard(props: {
             · {repeatLabels[props.reminder.repeat]}
           </p>
         </button>
-        <button
-          onClick={props.onToggle}
-          role="switch"
-          aria-checked={props.reminder.enabled}
-          aria-label="Toggle reminder"
-          class={`h-6 w-6 rounded-full border-2 transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${props.reminder.enabled ? "border-primary bg-primary" : "border-text-secondary"}`}
-        >
-          {props.reminder.enabled && <span class="block h-3 w-3 translate-x-[3px] translate-y-[3px] rounded-full bg-white" />}
-        </button>
+        <Switch
+          checked={props.reminder.enabled}
+          onChange={() => props.onToggle()}
+          aria-label={`Toggle ${props.reminder.title || "reminder"}`}
+        />
       </div>
 
       <Show when={expanded()}>

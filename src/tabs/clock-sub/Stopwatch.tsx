@@ -1,7 +1,9 @@
-import { createSignal, createMemo, For } from "solid-js";
+import { createSignal, createMemo, createEffect, createRoot, For, Show } from "solid-js";
 import { CircleProgress } from "../../components/CircleProgress";
 import { Button } from "../../components/Button";
+import { EmptyState } from "../../components/EmptyState";
 import { useInterval } from "../../hooks/use-interval";
+import { useShortcuts } from "../../hooks/use-shortcuts";
 import { haptic } from "../../lib/capacitor";
 import { showStatus } from "../../lib/status";
 
@@ -18,13 +20,54 @@ function format(ms: number) {
   return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}.${cs.toString().padStart(2, "0")}`;
 }
 
-export function StopwatchTab() {
-  const [running, setRunning] = createSignal(false);
-  const [time, setTime] = createSignal(0);
-  const [laps, setLaps] = createSignal<Lap[]>([]);
+// Module-scoped state: survives tab switches (the component unmounts when
+// another sub-tab is shown, but a running stopwatch must keep going).
+const [running, setRunning] = createSignal(false);
+const [time, setTime] = createSignal(0);
+const [laps, setLaps] = createSignal<Lap[]>([]);
 
-  let startRef = 0;
-  let offsetRef = 0;
+let startRef = 0;
+let offsetRef = 0;
+
+const SW_LS_KEY = "wrikka-stopwatch-state";
+
+// Restore a running/paused stopwatch from a previous session.
+try {
+  const raw = localStorage.getItem(SW_LS_KEY);
+  if (raw) {
+    const s = JSON.parse(raw);
+    if (Array.isArray(s.laps)) setLaps(s.laps);
+    if (typeof s.offset === "number") offsetRef = s.offset;
+    if (s.running && typeof s.startedAt === "number") {
+      startRef = s.startedAt;
+      setTime(offsetRef + (Date.now() - startRef));
+      setRunning(true);
+    } else {
+      setTime(offsetRef);
+    }
+  }
+} catch {
+  // ignore corrupt state
+}
+
+// Persist state changes (running flag, laps) so a reload resumes correctly.
+createRoot(() => {
+  createEffect(() => {
+    const snapshot = {
+      running: running(),
+      offset: offsetRef,
+      startedAt: startRef,
+      laps: laps(),
+    };
+    try {
+      localStorage.setItem(SW_LS_KEY, JSON.stringify(snapshot));
+    } catch {
+      // ignore
+    }
+  });
+});
+
+export function StopwatchTab() {
 
   const tick = () => {
     setTime(offsetRef + (Date.now() - startRef));
@@ -49,6 +92,12 @@ export function StopwatchTab() {
     setTime(0);
     setLaps([]);
     offsetRef = 0;
+    // Ensure the persisted snapshot is cleared even when no tracked signal changed.
+    try {
+      localStorage.setItem(SW_LS_KEY, JSON.stringify({ running: false, offset: 0, startedAt: 0, laps: [] }));
+    } catch {
+      // ignore
+    }
     haptic("light");
   }
 
@@ -62,6 +111,12 @@ export function StopwatchTab() {
   const bestLap = createMemo(() => (laps().length ? Math.min(...laps().map((l) => l.split)) : null));
   const worstLap = createMemo(() => (laps().length ? Math.max(...laps().map((l) => l.split)) : null));
 
+  useShortcuts({
+    space: () => (running() ? stop() : start()),
+    r: reset,
+    l: () => { if (running()) lap(); },
+  });
+
   async function shareLaps() {
     const text = laps().map((l) => `Lap ${l.id}: ${format(l.split)} / ${format(l.total)}`).join("\n");
     if (navigator.share) {
@@ -74,74 +129,99 @@ export function StopwatchTab() {
   }
 
   return (
-    <div class="tab-content flex h-full flex-col items-center gap-6 overflow-y-auto p-5 pb-28">
-      <div class="mt-4 flex flex-col items-center gap-2">
-        <CircleProgress progress={0} size={260} stroke={10}>
-          <div class="text-center">
-            <p class="text-6xl font-bold tabular-nums text-glow">{format(time())}</p>
-            <p class="mt-1 text-sm text-text-secondary">
-              {time() === 0 ? "Tap start to begin" : `${laps().length} lap${laps().length !== 1 ? "s" : ""}`}
-            </p>
+    <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
+      <div class="mx-auto flex max-w-4xl flex-col items-center gap-6 md:grid md:grid-cols-2 md:items-start md:gap-10">
+        {/* Left column: dial + controls */}
+        <div class="flex w-full flex-col items-center gap-6">
+          <div class="mt-4 flex flex-col items-center gap-2">
+            <CircleProgress progress={(time() % 60000) / 60000} size={260} stroke={10}>
+              <div class="text-center">
+                <p class="text-6xl font-bold tabular-nums text-glow">{format(time())}</p>
+                <p class="mt-1 text-sm text-text-secondary">
+                  {time() === 0 ? "Tap start to begin" : `${laps().length} lap${laps().length !== 1 ? "s" : ""}`}
+                </p>
+              </div>
+            </CircleProgress>
           </div>
-        </CircleProgress>
-      </div>
 
-      <div class="flex w-full max-w-sm gap-3">
-        <Button
-          onClick={running() ? stop : start}
-          class="h-16 flex-1 rounded-3xl text-xl"
-          variant={running() ? "danger" : "primary"}
-          aria-label={running() ? "Stop stopwatch" : "Start stopwatch"}
-        >
-          {running() ? (
-            <><span class="i-mdi-pause mr-2 h-5 w-5" /> Stop</>
-          ) : (
-            <><span class="i-mdi-play mr-2 h-5 w-5" /> Start</>
+          <div class="flex w-full max-w-sm gap-3">
+            <Button
+              onClick={running() ? stop : start}
+              class="h-16 flex-1 rounded-3xl text-xl"
+              variant={running() ? "danger" : "primary"}
+              aria-label={running() ? "Stop stopwatch" : "Start stopwatch"}
+            >
+              {running() ? (
+                <><span class="i-mdi-pause mr-2 h-5 w-5" /> Stop</>
+              ) : (
+                <><span class="i-mdi-play mr-2 h-5 w-5" /> Start</>
+              )}
+            </Button>
+            {running() ? (
+              <Button onClick={lap} class="h-16 flex-1 rounded-3xl text-xl" variant="secondary" aria-label="Record lap">
+                <span class="i-mdi-flag mr-2 h-5 w-5" /> Lap
+              </Button>
+            ) : (
+              <Button onClick={reset} class="h-16 flex-1 rounded-3xl text-xl" variant="secondary" aria-label="Reset stopwatch">
+                <span class="i-mdi-refresh mr-2 h-5 w-5" /> Reset
+              </Button>
+            )}
+          </div>
+
+          {laps().length > 0 && (
+            <Button onClick={shareLaps} variant="ghost" size="sm" class="-mt-2" aria-label="Export or share laps">
+              <span class="i-mdi-share mr-2 h-4 w-4" /> Export laps
+            </Button>
           )}
-        </Button>
-        {running() ? (
-          <Button onClick={lap} class="h-16 flex-1 rounded-3xl text-xl" variant="secondary" aria-label="Record lap">
-            <span class="i-mdi-flag mr-2 h-5 w-5" /> Lap
-          </Button>
-        ) : (
-          <Button onClick={reset} class="h-16 flex-1 rounded-3xl text-xl" variant="secondary" aria-label="Reset stopwatch">
-            <span class="i-mdi-refresh mr-2 h-5 w-5" /> Reset
-          </Button>
-        )}
-      </div>
 
-      {laps().length > 0 && (
-        <Button onClick={shareLaps} variant="ghost" size="sm" class="-mt-2" aria-label="Export or share laps">
-          <span class="i-mdi-share mr-2 h-4 w-4" /> Export laps
-        </Button>
-      )}
-
-      {laps().length > 0 && (
-        <div class="w-full max-w-sm rounded-3xl bg-surface-2 p-4">
-          <h3 class="mb-2 text-sm font-semibold text-text-secondary uppercase tracking-wide">Laps</h3>
-          <div class="max-h-52 space-y-2 overflow-y-auto">
-            <For each={laps().slice().reverse()}>
-              {(lap) => {
-                const isBest = lap.split === bestLap();
-                const isWorst = lap.split === worstLap() && laps().length > 2;
-                return (
-                  <div
-                    class={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
-                      isBest ? "border-success/30 bg-success/10" : isWorst ? "border-danger/30 bg-danger/10" : "border-border bg-surface-3"
-                    }`}
-                  >
-                    <span class="text-sm text-text-secondary">Lap {lap.id}</span>
-                    <div class="text-right">
-                      <p class="font-mono text-lg font-semibold">{format(lap.split)}</p>
-                      <p class="text-xs text-muted">{format(lap.total)}</p>
-                    </div>
-                  </div>
-                );
-              }}
-            </For>
-          </div>
+          <p class="hidden text-xs text-muted md:block">
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">Space</kbd> start/stop ·{" "}
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">L</kbd> lap ·{" "}
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">R</kbd> reset
+          </p>
         </div>
-      )}
+
+        {/* Right column: laps */}
+        <div class="w-full max-w-sm md:max-w-none">
+          <Show
+            when={laps().length > 0}
+            fallback={
+              <div class="rounded-3xl bg-surface-2 p-4 md:min-h-60">
+                <EmptyState
+                  icon="i-mdi-flag-outline"
+                  title="No laps yet"
+                  subtitle="Press Lap while running to record splits"
+                />
+              </div>
+            }
+          >
+            <div class="rounded-3xl bg-surface-2 p-4">
+              <h3 class="mb-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">Laps</h3>
+              <div class="max-h-52 space-y-2 overflow-y-auto md:max-h-96">
+                <For each={laps().slice().reverse()}>
+                  {(lap) => {
+                    const isBest = lap.split === bestLap();
+                    const isWorst = lap.split === worstLap() && laps().length > 2;
+                    return (
+                      <div
+                        class={`flex items-center justify-between rounded-2xl border px-4 py-3 ${
+                          isBest ? "border-success/30 bg-success/10" : isWorst ? "border-danger/30 bg-danger/10" : "border-border bg-surface-3"
+                        }`}
+                      >
+                        <span class="text-sm text-text-secondary">Lap {lap.id}</span>
+                        <div class="text-right">
+                          <p class="font-mono text-lg font-semibold">{format(lap.split)}</p>
+                          <p class="text-xs text-muted">{format(lap.total)}</p>
+                        </div>
+                      </div>
+                    );
+                  }}
+                </For>
+              </div>
+            </div>
+          </Show>
+        </div>
+      </div>
     </div>
   );
 }

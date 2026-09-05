@@ -6,6 +6,7 @@ import { Header } from "./components/Header";
 import { TabBar } from "./components/TabBar";
 import { StatusToast } from "./components/StatusToast";
 import { SettingsModal } from "./components/SettingsModal";
+import { AlarmRingOverlay } from "./components/AlarmRingOverlay";
 import { ClockView } from "./tabs/clock-sub/Clock";
 import { AlarmTab } from "./tabs/clock-sub/Alarm";
 import { StopwatchTab } from "./tabs/clock-sub/Stopwatch";
@@ -70,11 +71,28 @@ export default function App() {
     });
   });
 
+  // Keyboard: ←/→ switch sub-tabs (skipped while typing or when an overlay is open).
+  onMount(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement;
+      if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) return;
+      if (appStore.settingsOpen || appStore.ringing) return;
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+      const idx = SUB_TAB_ORDER.indexOf(appStore.clockSubTab);
+      const next = e.key === "ArrowRight" ? idx + 1 : idx - 1;
+      if (next < 0 || next >= SUB_TAB_ORDER.length) return;
+      setClockSubTab(SUB_TAB_ORDER[next]);
+    };
+    window.addEventListener("keydown", onKey);
+    onCleanup(() => window.removeEventListener("keydown", onKey));
+  });
+
   return (
-    <div class="flex h-screen w-full flex-col bg-bg text-text">
+    <div class="flex h-dvh w-full flex-col bg-bg text-text">
       <Header />
       <StatusToast />
       <main id="clock-main" class="tab-content flex-1 overflow-y-auto">
+        <div class="mx-auto h-full w-full max-w-5xl">
         <Switch fallback={<ClockView />}>
           <Match when={appStore.clockSubTab === "clock"}><ClockView /></Match>
           <Match when={appStore.clockSubTab === "alarm"}><AlarmTab /></Match>
@@ -83,9 +101,11 @@ export default function App() {
           <Match when={appStore.clockSubTab === "pomodoro"}><PomodoroTab /></Match>
           <Match when={appStore.clockSubTab === "reminder"}><ReminderTab /></Match>
         </Switch>
+        </div>
       </main>
       <TabBar />
       {appStore.settingsOpen && <SettingsModal onClose={closeSettings} />}
+      <AlarmRingOverlay />
     </div>
   );
 }

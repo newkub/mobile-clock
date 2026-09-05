@@ -1,6 +1,7 @@
 import { createSignal, For } from "solid-js";
 import { Button } from "../../../components/Button";
 import { Input } from "../../../components/Input";
+import { Modal } from "../../../components/Modal";
 import { type Reminder } from "../../../store/app";
 
 export function AddReminderModal(props: { onClose: () => void; onAdd: (r: Reminder) => void }) {
@@ -29,8 +30,7 @@ export function AddReminderModal(props: { onClose: () => void; onAdd: (r: Remind
   }
 
   return (
-    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4">
-      <div class="w-full max-w-md rounded-3xl bg-surface p-6">
+    <Modal onClose={props.onClose} panelClass="max-h-[85vh] overflow-y-auto" aria-label="New reminder">
         <h2 class="mb-4 flex items-center gap-2 text-xl font-bold">
           <span class="i-mdi-bell h-6 w-6 text-primary" /> New Reminder
         </h2>
@@ -61,7 +61,6 @@ export function AddReminderModal(props: { onClose: () => void; onAdd: (r: Remind
           <Button onClick={props.onClose} variant="secondary" class="flex-1" aria-label="Cancel">Cancel</Button>
           <Button onClick={save} class="flex-1" aria-label="Save reminder">Save</Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,9 +1,9 @@
-import { createSignal, createEffect, For, Show } from "solid-js";
+import { createSignal, createEffect, createRoot, onCleanup, For, Show } from "solid-js";
 import { CircleProgress } from "../../components/CircleProgress";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { EmptyState } from "../../components/EmptyState";
-import { useInterval } from "../../hooks/use-interval";
+import { useShortcuts } from "../../hooks/use-shortcuts";
 import { haptic } from "../../lib/capacitor";
 import { showStatus } from "../../lib/status";
 import { playBeep } from "../../lib/audio";
@@ -14,30 +14,78 @@ function format(total: number) {
   return formatDuration(total);
 }
 
-export function TimerTab() {
-  const [seconds, setSeconds] = createSignal(60);
-  const [remaining, setRemaining] = createSignal(60);
-  const [running, setRunning] = createSignal(false);
-  const [showAdd, setShowAdd] = createSignal(false);
-  const [newName, setNewName] = createSignal("");
-  const [newSec, setNewSec] = createSignal(300);
-  const [newColor, setNewColor] = createSignal("#6366f1");
+// Module-scoped state: survives tab switches. The countdown is driven by a
+// wall-clock deadline so it stays correct even while the tab is unmounted.
+const [seconds, setSeconds] = createSignal(60);
+const [remaining, setRemaining] = createSignal(60);
+const [running, setRunning] = createSignal(false);
+const [showAdd, setShowAdd] = createSignal(false);
+const [newName, setNewName] = createSignal("");
+const [newSec, setNewSec] = createSignal(300);
+const [newColor, setNewColor] = createSignal("#6366f1");
+// Ring color follows the last selected preset.
+const [activeColor, setActiveColor] = createSignal("#6366f1");
+let endsAtRef = 0;
 
-  const tick = () => {
-    setRemaining((r) => Math.max(0, r - 1));
-  };
+const TIMER_LS_KEY = "wrikka-timer-state";
 
-  useInterval(tick, () => (running() ? 1000 : null));
+// Restore a running/paused timer from a previous session (reload / app restart).
+try {
+  const raw = localStorage.getItem(TIMER_LS_KEY);
+  if (raw) {
+    const s = JSON.parse(raw);
+    if (typeof s.seconds === "number" && s.seconds > 0) setSeconds(s.seconds);
+    if (s.running && typeof s.endsAt === "number") {
+      endsAtRef = s.endsAt;
+      setRemaining(Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000)));
+      setRunning(remaining() > 0);
+    } else if (typeof s.remaining === "number") {
+      setRemaining(Math.max(0, s.remaining));
+    }
+  }
+} catch {
+  // ignore corrupt state
+}
+
+// Keep the countdown + finish side effects alive outside the component so they
+// keep working while another sub-tab is mounted.
+createRoot(() => {
+  createEffect(() => {
+    const snapshot = {
+      seconds: seconds(),
+      remaining: remaining(),
+      running: running(),
+      endsAt: endsAtRef,
+    };
+    try {
+      localStorage.setItem(TIMER_LS_KEY, JSON.stringify(snapshot));
+    } catch {
+      // ignore
+    }
+  });
+
+  createEffect(() => {
+    if (!running()) return;
+    const id = setInterval(() => {
+      setRemaining(Math.max(0, Math.ceil((endsAtRef - Date.now()) / 1000)));
+    }, 250);
+    onCleanup(() => clearInterval(id));
+  });
 
   createEffect(() => {
     if (running() && remaining() <= 0) {
       setRunning(false);
       if (appStore.globalSettings.sound) playBeep(660, 1.2, "sine");
       haptic("success");
+      showStatus("Timer finished", "success");
     }
   });
+});
 
+export function TimerTab() {
   function start() {
+    if (remaining() <= 0) setRemaining(seconds());
+    endsAtRef = Date.now() + remaining() * 1000;
     setRunning(true);
     haptic("medium");
   }
@@ -56,6 +104,7 @@ export function TimerTab() {
   function selectPreset(p: TimerPreset) {
     setSeconds(p.seconds);
     setRemaining(p.seconds);
+    setActiveColor(p.color);
     setRunning(false);
     haptic("light");
   }
@@ -63,6 +112,7 @@ export function TimerTab() {
   function adjust(delta: number) {
     setRemaining((r) => Math.max(0, r + delta));
     setSeconds((s) => Math.max(0, s + delta));
+    if (running()) endsAtRef = Date.now() + remaining() * 1000;
   }
 
   function addCustom() {
@@ -85,25 +135,33 @@ export function TimerTab() {
     showStatus("Preset removed", "info");
   }
 
-  return (
-    <div class="tab-content flex h-full flex-col items-center gap-5 overflow-y-auto p-5 pb-28">
-      <div class="mt-2">
-        <CircleProgress
-          progress={seconds() > 0 ? (seconds() - remaining()) / seconds() : 0}
-          size={260}
-          stroke={12}
-          color="#6366f1"
-        >
-          <div class="text-center">
-            <p class="text-6xl font-bold tabular-nums text-glow">{format(remaining())}</p>
-            <p class="mt-1 text-sm text-text-secondary">
-              {running() ? "Running" : remaining() === seconds() ? "Ready" : "Paused"}
-            </p>
-          </div>
-        </CircleProgress>
-      </div>
+  useShortcuts({
+    space: () => (running() ? pause() : start()),
+    r: reset,
+  });
 
-      <div class="flex items-center gap-3">
+  return (
+    <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
+      <div class="mx-auto flex max-w-4xl flex-col items-center gap-5 md:grid md:grid-cols-2 md:items-start md:gap-10">
+        {/* Left column: dial + controls */}
+        <div class="flex w-full flex-col items-center gap-5">
+          <div class="mt-2">
+            <CircleProgress
+              progress={seconds() > 0 ? (seconds() - remaining()) / seconds() : 0}
+              size={260}
+              stroke={12}
+              color={activeColor()}
+            >
+              <div class="text-center">
+                <p class="text-6xl font-bold tabular-nums text-glow">{format(remaining())}</p>
+                <p class="mt-1 text-sm text-text-secondary">
+                  {running() ? "Running" : remaining() === 0 ? "Time's up" : remaining() === seconds() ? "Ready" : "Paused"}
+                </p>
+              </div>
+            </CircleProgress>
+          </div>
+
+          <div class="flex items-center gap-3">
         <button onClick={() => adjust(-60)} class="rounded-2xl bg-surface-3 px-4 py-2 text-sm text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text" aria-label="Decrease 1 minute">-1m</button>
         <button onClick={() => adjust(-10)} class="rounded-2xl bg-surface-3 px-4 py-2 text-sm text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text" aria-label="Decrease 10 seconds">-10s</button>
         <button onClick={() => adjust(10)} class="rounded-2xl bg-surface-3 px-4 py-2 text-sm text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text" aria-label="Increase 10 seconds">+10s</button>
@@ -128,7 +186,16 @@ export function TimerTab() {
         </Button>
       </div>
 
-      <div class="w-full max-w-sm rounded-3xl bg-surface-2 p-4">
+          <p class="hidden text-xs text-muted md:block">
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">Space</kbd> start/pause ·{" "}
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">R</kbd> reset ·{" "}
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">←</kbd>
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">→</kbd> switch tab
+          </p>
+        </div>
+
+        {/* Right column: presets */}
+      <div class="w-full max-w-sm rounded-3xl bg-surface-2 p-4 md:max-w-none">
         <div class="mb-3 flex items-center justify-between">
           <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide">Presets</h3>
           <button
@@ -188,7 +255,7 @@ export function TimerTab() {
                 </button>
                 <button
                   onClick={() => removePreset(p.id)}
-                  class="rounded-full p-1 text-text-secondary opacity-0 transition active:scale-95 focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-danger group-hover:opacity-100"
+                  class="rounded-full p-1 text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-danger"
                   aria-label={`Remove preset ${p.name}`}
                 >
                   <span class="i-mdi-delete h-3.5 w-3.5" />
@@ -197,6 +264,7 @@ export function TimerTab() {
             )}
           </For>
         </div>
+      </div>
       </div>
     </div>
   );

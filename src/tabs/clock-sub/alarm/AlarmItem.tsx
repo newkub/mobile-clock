@@ -3,11 +3,19 @@ import { updateAlarm, removeAlarm, toggleAlarm, type Alarm, type Day } from "../
 import { Input } from "../../../components/Input";
 import { Switch } from "../../../components/Switch";
 import { Button } from "../../../components/Button";
+import { TimePicker } from "../../../components/TimePicker";
 import { haptic } from "../../../lib/capacitor";
 import { scheduleAlarm, cancelAlarm } from "../../../lib/notifications";
 import { hashId } from "../../../lib/hash";
-import { DAYS, DAY_LABELS } from "./constants";
+import { DAYS, DAY_LABELS, repeatSummary } from "./constants";
 import { AiSoundEditor } from "./AiSoundEditor";
+
+function nextDateFor(a: Alarm): Date {
+  const next = new Date();
+  next.setHours(a.hour, a.minute, 0, 0);
+  if (next < new Date()) next.setDate(next.getDate() + 1);
+  return next;
+}
 
 export function AlarmItem(props: { alarm: Alarm }) {
   const [expanded, setExpanded] = createSignal(false);
@@ -16,18 +24,30 @@ export function AlarmItem(props: { alarm: Alarm }) {
     toggleAlarm(props.alarm.id);
     if (enabled) {
       await haptic("success");
-      const next = new Date();
-      next.setHours(props.alarm.hour, props.alarm.minute, 0, 0);
-      if (next < new Date()) next.setDate(next.getDate() + 1);
       await scheduleAlarm({
         id: hashId(props.alarm.id),
         title: props.alarm.label || "Alarm",
         body: "Time to wake up!",
-        schedule: { at: next },
+        schedule: { at: nextDateFor(props.alarm) },
       });
     } else {
       await haptic("light");
       await cancelAlarm(hashId(props.alarm.id));
+    }
+  }
+
+  // Reschedule the notification when the time of an enabled alarm changes.
+  async function changeTime(hour: number, minute: number) {
+    updateAlarm(props.alarm.id, { hour, minute });
+    if (props.alarm.enabled) {
+      const updated = { ...props.alarm, hour, minute };
+      await cancelAlarm(hashId(props.alarm.id));
+      await scheduleAlarm({
+        id: hashId(props.alarm.id),
+        title: updated.label || "Alarm",
+        body: "Time to wake up!",
+        schedule: { at: nextDateFor(updated) },
+      });
     }
   }
 
@@ -53,23 +73,42 @@ export function AlarmItem(props: { alarm: Alarm }) {
         </button>
         <Switch checked={props.alarm.enabled} onChange={(v) => handleToggle(v)} aria-label={`Toggle ${props.alarm.label || "alarm"}`} />
       </div>
-      <div class="mt-3 flex gap-1">
-        <For each={DAYS}>
-          {(d: Day) => (
-            <span
-              class={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-medium ${
-                props.alarm.repeat.includes(d)
-                  ? "bg-primary text-white"
-                  : "bg-surface-3 text-text-secondary"
-              }`}
-            >
-              {DAY_LABELS[d]}
-            </span>
-          )}
-        </For>
-      </div>
+      <p class="mt-2 flex items-center gap-1.5 text-xs text-text-secondary">
+        <span class="i-mdi-repeat h-3.5 w-3.5" />
+        {repeatSummary(props.alarm.repeat)}
+      </p>
       <Show when={expanded()}>
         <div class="mt-4 space-y-3 border-t border-border pt-4">
+          <TimePicker
+            compact
+            hour={props.alarm.hour}
+            minute={props.alarm.minute}
+            onChange={(h, m) => changeTime(h, m)}
+          />
+          <div>
+            <label class="mb-2 block text-sm text-text-secondary">Repeat</label>
+            <div class="flex gap-1.5">
+              <For each={DAYS}>
+                {(d: Day) => (
+                  <button
+                    onClick={() =>
+                      updateAlarm(props.alarm.id, {
+                        repeat: props.alarm.repeat.includes(d)
+                          ? props.alarm.repeat.filter((x) => x !== d)
+                          : [...props.alarm.repeat, d],
+                      })
+                    }
+                    class={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-medium transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                      props.alarm.repeat.includes(d) ? "bg-primary text-white" : "bg-surface-3 text-text-secondary"
+                    }`}
+                    aria-label={`Toggle ${d}`}
+                  >
+                    {DAY_LABELS[d]}
+                  </button>
+                )}
+              </For>
+            </div>
+          </div>
           <Input
             label="Label"
             value={props.alarm.label}

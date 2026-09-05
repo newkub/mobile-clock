@@ -1,23 +1,20 @@
 ---
-name: wrikka-mobile
-description: Personal customizable Android/PWA app with Clock, Tasks, Devin, Notes, Saved, Email tabs and Cloudflare Workers + D1 sync
+name: mobile-clock
+description: Local-first Android/PWA clock app — Clock, Alarm, Stopwatch, Timer, Pomodoro, Reminder — SolidJS + Capacitor 8 + Cloudflare Workers static assets
 ---
 
 ## Goal
 
-Ship `wrikka-mobile` ให้ทำงานบน Android (Capacitor 8) และ PWA บน Cloudflare Workers โดยมี Home เป็นหน้าแรก พร้อม tabs ปรับแต่งได้ ตั้งค่าได้ และ UX ที่ใช้งานง่าย
+Ship `mobile-clock` ให้ทำงานบน Android (Capacitor 8) และ PWA บน Cloudflare Workers โดย local-first (ไม่ต้องมี backend sync) พร้อม UX ที่ใช้งานง่ายบน mobile/tablet/desktop
 
 ## Scope
 
-- Web app: React 19 + Vite 8 + TypeScript 5 + Tailwind CSS v4
+- Web app: SolidJS 1.9 + Vite 8 + TypeScript 5 (strict) + UnoCSS (presetWind4 + presetIcons/MDI)
 - Mobile wrapper: Capacitor 8 (Android only)
-- Storage: Capacitor Preferences + Zustand persist
-- Sync: Cloudflare Workers + D1 สำหรับ alarms/reminders
-- Notifications: Capacitor Local Notifications + PWA service worker
-- AI sound: ElevenLabs API (TTS)
-- Widget: Android home screen clock widget
-- Deploy: Cloudflare Workers + Wrangler
-- Play Store: release AAB signed and upload-ready
+- Storage: Solid `createStore` persisted ผ่าน localStorage (`wrikka-clock-store`) + localStorage keys สำหรับ running timers
+- Notifications: Capacitor Local Notifications (native) + web alarm watcher + in-app ringing overlay + service worker
+- AI sound: ElevenLabs API (TTS) ผ่าน settings
+- Deploy: Cloudflare Workers static assets + Wrangler (SPA `not_found_handling`)
 - Review: /review-codebase
 
 ## Execute
@@ -26,20 +23,17 @@ Ship `wrikka-mobile` ให้ทำงานบน Android (Capacitor 8) แล
 # dev
 bun dev
 
-# worker dev (run in another terminal)
-bun dev:worker
-
-# build web
+# build web (tsc -b && vite build)
 bun build
 
 # typecheck
 bun typecheck
 
-# test
+# test (vitest)
 bun run test
 
 # add Android platform (requires Android SDK)
-bun cap add android
+bun cap:add:android
 
 # sync web assets to Android
 bun cap:sync
@@ -49,48 +43,40 @@ bun cap:open
 
 # deploy to Cloudflare Workers
 bun run deploy
-
-# create D1 database
-bunx wrangler d1 create wrikka-mobile-db
-
-# build release AAB
-cd android
-./gradlew bundleRelease
 ```
 
 ## Rules
 
-- ใช้ React hooks และ Zustand สำหรับ state
-- ห้าม hardcode secrets ใน source
+- ใช้ Solid signals + `createStore`/`setStore` สำหรับ state — ห้ามพึ่ง React patterns
+- ห้าม hardcode secrets ใน source (ElevenLabs key เก็บใน store/localStorage)
 - TypeScript strict mode
-- ทุก async external call (Capacitor, ElevenLabs, Worker) ต้องมี try/catch
+- ทุก async external call (Capacitor, notifications, Worker, ElevenLabs) ต้องมี try/catch
 - ทุก component/tab ควรยาวไม่เกิน 250 บรรทัด
+- Timer/Stopwatch/Pomodoro ต้องใช้ module-scoped state + wall-clock (`endsAt`) และ persist ลง localStorage — ห้าม reset เมื่อสลับ tab หรือ reload
+- Modal ทั้งหมดใช้ shared `components/Modal.tsx` (backdrop + Escape close)
+- Responsive: `<md` ใช้ bottom `TabBar`, `md+` ใช้ top nav ใน `Header` + content container `max-w-*` กึ่งกลาง
 - PWA manifest และ service worker ต้องครบถ้วน
 - Android project ใช้ `server.cleartext` disabled สำหรับ production
-- ข้อมูล alarm/reminder sync ผ่าน `/api/alarms` และ `/api/reminders` บน Worker
-- ข้อมูล sensitive ทั้งหมด (ElevenLabs key, user id) เก็บบนอุปกรณ์ผ่าน Preferences / localStorage
-- แต่ละ tab ควรมี settings ของตัวเอง บวก global settings
 
 ## Architecture
 
-- `src/main.tsx` — entry, init Capacitor plugins
-- `src/App.tsx` — home, tab router, settings modal, onboarding
-- `src/components/` — reusable UI (Button, Input, Switch, TimePicker, CircleProgress, TabBar, Header, StatusToast)
-- `src/tabs/` — Home, Clock, Task, Devin, Notes, Saved, Email, Agent
-- `src/tabs/clock-sub/` — Alarm, Stopwatch, Timer, Pomodoro, Reminder
-- `src/lib/` — Capacitor wrapper, storage, audio, ElevenLabs, notifications, sync API, status
-- `src/store/app.ts` — Zustand state persisted locally
-- `worker/index.ts` — Cloudflare Worker entry with static assets
-- `worker/api/alarms.ts` — sync alarms
-- `worker/api/reminders.ts` — sync reminders
-- `worker/api/status.ts` — GitHub/Cloudflare status
-- `worker/api/ai-fix.ts` — error → fix suggestion
-- `wrangler.toml` — Workers + D1 + static assets config
+- `src/main.tsx` — entry, init Capacitor plugins, notification permission, service worker
+- `src/App.tsx` — root layout, sub-tab router (`Switch`/`Match`), swipe + keyboard nav, alarm watcher, ringing overlay
+- `src/store/app.ts` — `createStore` + initial state + localStorage hydrate/persist
+- `src/store/actions.ts` — state mutation helpers (alarms, presets, reminders, pomodoro sessions, settings)
+- `src/types.ts` — `Alarm`, `Reminder`, `TimerPreset`, `PomodoroSession`, tab types
+- `src/components/` — Button, Input, Switch, Modal, TimePicker, CircleProgress, EmptyState, StatusToast, Header (+ top nav), TabBar, AnalogClock, AlarmRingOverlay, `nav-meta.ts` (shared sub-tab metadata)
+- `src/hooks/` — `use-interval`, `use-media-query`, `use-shortcuts`
+- `src/tabs/clock-sub/` — Clock, Alarm, Stopwatch, Timer, Pomodoro, Reminder (+ `alarm/`, `reminder/` subdirs)
+- `src/lib/` — capacitor, status, audio, elevenlabs, notifications, time, hash
+- `worker/index.ts` — Cloudflare Worker entry (static assets only)
+- `wrangler.jsonc` — Workers + static assets config
 
 ## Expected Outcome
 
-- `bun build` passes
-- `bun run test` passes
+- `bun typecheck` ผ่าน
+- `bun build` ผ่าน
+- `bun run test` ผ่าน
 - PWA deploys to Cloudflare Workers
-- D1 sync endpoint พร้อมใช้
-- Android project structure is ready for `cap add android` once Android SDK is installed
+- Timers ไม่หายเมื่อสลับ tab หรือ reload
+- Android project structure พร้อม `bun cap:add:android` เมื่อมี Android SDK

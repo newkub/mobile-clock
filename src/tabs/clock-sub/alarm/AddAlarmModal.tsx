@@ -2,6 +2,7 @@ import { createSignal, For } from "solid-js";
 import { addAlarm, type Alarm, type Day } from "../../../store/app";
 import { Button } from "../../../components/Button";
 import { Input } from "../../../components/Input";
+import { Modal } from "../../../components/Modal";
 import { TimePicker } from "../../../components/TimePicker";
 import { DAYS, DAY_LABELS } from "./constants";
 
@@ -30,8 +31,7 @@ export function AddAlarmModal(props: { onClose: () => void }) {
   }
 
   return (
-    <div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-4">
-      <div class="w-full max-w-md rounded-3xl bg-surface p-6">
+    <Modal onClose={props.onClose} panelClass="max-h-[85vh] overflow-y-auto" aria-label="New alarm">
         <h2 class="mb-4 text-xl font-bold">New Alarm</h2>
         <TimePicker hour={hour()} minute={minute()} onChange={(h, m) => { setHour(h); setMinute(m); }} />
         <div class="mt-4">
@@ -79,7 +79,6 @@ export function AddAlarmModal(props: { onClose: () => void }) {
           <Button onClick={props.onClose} variant="secondary" class="flex-1" aria-label="Cancel adding alarm">Cancel</Button>
           <Button onClick={save} class="flex-1" aria-label="Save alarm">Save</Button>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
