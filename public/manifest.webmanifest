@@ -1,0 +1,19 @@
+{
+  "name": "Wrikka Clock",
+  "short_name": "Clock",
+  "description": "Local-first clock app — Alarm, Stopwatch, Timer, Pomodoro and Reminders",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b13",
+  "theme_color": "#0b0b13",
+  "categories": ["utilities", "productivity"],
+  "icons": [
+    {
+      "src": "/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

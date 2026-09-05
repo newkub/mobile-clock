@@ -1,0 +1,25 @@
+Wrikka Mobile is a personal customizable app for Android and PWA. It starts with a clean Home screen and gives you tabs for Clock, Task, Devin, Notes, Saved, Email, and AI-generated tabs.
+
+Clock sub-features:
+- Alarm: set recurring alarms, choose from built-in sounds or generate a custom AI voice with ElevenLabs.
+- Stopwatch: track laps with best/worst lap highlights and easy share.
+- Timer: use quick presets or create your own with live circle progress.
+- Pomodoro: focus sessions, short & long breaks, and daily cycle stats.
+- Reminder: schedule one-time or recurring reminders months ahead.
+
+Other tabs:
+- Task: quick to-do list.
+- Devin: AI agent hub.
+- Notes: simple persistent notes.
+- Saved: bookmark links.
+- Email: draft emails.
+- AI New Tab: create a custom tab from a prompt.
+
+Key features:
+- Cloud sync across devices via Cloudflare D1.
+- Home screen clock widget.
+- Customizable Home, global settings, per-tab settings, and logo options.
+- Onboarding and notification setup.
+- Works offline, syncs when online.
+
+Privacy policy: https://wrikka-mobile.pages.dev/privacy-policy.html

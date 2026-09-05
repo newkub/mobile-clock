@@ -1,0 +1,152 @@
+import { createSignal, For } from "solid-js";
+import { appStore, setGlobalSetting, setElevenLabsKey } from "../store/app";
+import { showStatus } from "../lib/status";
+import { haptic } from "../lib/capacitor";
+import { requestNotificationPermission } from "../lib/notifications";
+import { Button } from "./Button";
+import { Input } from "./Input";
+import { Switch } from "./Switch";
+
+export function SettingsModal(props: { onClose: () => void }) {
+	const [key, setKey] = createSignal(appStore.elevenLabsKey);
+
+	function setTheme(theme: "dark" | "light") {
+		setGlobalSetting("theme", theme);
+		haptic("light");
+	}
+
+	function saveKey() {
+		setElevenLabsKey(key().trim());
+		showStatus("ElevenLabs key saved", "success");
+	}
+
+	async function enableNotifications() {
+		setGlobalSetting("notifications", true);
+		const granted = await requestNotificationPermission();
+		showStatus(
+			granted ? "Notifications enabled" : "Permission denied by system",
+			granted ? "success" : "warning",
+		);
+	}
+
+	return (
+		<div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
+			<div class="flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface p-6 sm:rounded-3xl">
+				<div class="mb-5 flex items-center justify-between">
+					<h2 class="flex items-center gap-2 text-xl font-bold text-text">
+						<span class="i-mdi-cog h-6 w-6 text-primary" /> Settings
+					</h2>
+					<button
+						onClick={props.onClose}
+						class="rounded-full p-2 text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text"
+						aria-label="Close settings"
+					>
+						<span class="i-mdi-close h-5 w-5" />
+					</button>
+				</div>
+
+				<div class="space-y-6 overflow-y-auto pr-1">
+					{/* Theme */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-palette h-4 w-4" /> Theme
+						</h3>
+						<div class="flex gap-2">
+							<For each={["dark", "light"] as const}>
+								{(t) => (
+									<button
+										onClick={() => setTheme(t)}
+										class={`flex flex-1 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-semibold capitalize transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+											appStore.globalSettings.theme === t
+												? "border-primary bg-primary/10 text-primary"
+												: "border-border bg-surface-2 text-text-secondary"
+										}`}
+										aria-label={`Use ${t} theme`}
+									>
+										<span class={`${t === "dark" ? "i-mdi-weather-night" : "i-mdi-white-balance-sunny"} h-4 w-4`} />
+										{t}
+									</button>
+								)}
+							</For>
+						</div>
+					</section>
+
+					{/* Sound & feedback */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-volume-high h-4 w-4" /> Sound &amp; feedback
+						</h3>
+						<div class="space-y-3 rounded-2xl bg-surface-2 p-4">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-text">Timer sounds</p>
+									<p class="text-xs text-text-secondary">Play a beep when timers finish</p>
+								</div>
+								<Switch
+									checked={appStore.globalSettings.sound}
+									onChange={(v) => setGlobalSetting("sound", v)}
+									aria-label="Toggle timer sounds"
+								/>
+							</div>
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-text">Haptics</p>
+									<p class="text-xs text-text-secondary">Vibrate on taps and alerts</p>
+								</div>
+								<Switch
+									checked={appStore.globalSettings.haptics}
+									onChange={(v) => setGlobalSetting("haptics", v)}
+									aria-label="Toggle haptics"
+								/>
+							</div>
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-text">Notifications</p>
+									<p class="text-xs text-text-secondary">Alarm and reminder alerts</p>
+								</div>
+								<Switch
+									checked={appStore.globalSettings.notifications}
+									onChange={(v) => (v ? enableNotifications() : setGlobalSetting("notifications", false))}
+									aria-label="Toggle notifications"
+								/>
+							</div>
+						</div>
+					</section>
+
+					{/* AI alarm voice */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-sparkles h-4 w-4" /> AI alarm voice
+						</h3>
+						<div class="rounded-2xl bg-surface-2 p-4">
+							<Input
+								value={key()}
+								onChange={setKey}
+								placeholder="ElevenLabs API key (sk_...)"
+								aria-label="ElevenLabs API key"
+							/>
+							<p class="mt-2 text-xs text-text-secondary">
+								Stored locally. Used to generate AI voice alarm sounds.
+							</p>
+							<Button onClick={saveKey} size="sm" class="mt-3 w-full" aria-label="Save ElevenLabs key">
+								<span class="i-mdi-content-save mr-2 h-4 w-4" /> Save key
+							</Button>
+						</div>
+					</section>
+
+					{/* About */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-information h-4 w-4" /> About
+						</h3>
+						<div class="rounded-2xl bg-surface-2 p-4 text-sm text-text-secondary">
+							<p class="font-semibold text-text">Wrikka Clock</p>
+							<p class="mt-1">Alarm, stopwatch, timer, pomodoro and reminders — all local on your device.</p>
+							<p class="mt-2 text-xs">v0.0.1 · MIT License · Data never leaves this device.</p>
+						</div>
+					</section>
+				</div>
+			</div>
+		</div>
+	);
+}

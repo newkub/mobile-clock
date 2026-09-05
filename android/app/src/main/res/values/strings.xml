@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Wrikka Mobile</string>
+    <string name="title_activity_main">Wrikka Mobile</string>
+    <string name="package_name">com.wrikka.mobile</string>
+    <string name="custom_url_scheme">com.wrikka.mobile</string>
+</resources>

@@ -1,0 +1,46 @@
+# Dependencies
+node_modules
+bun.lock
+bun.lockb
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build output
+dist
+dist-ssr
+*.local
+tsconfig.tsbuildinfo
+tsconfig.*.tsbuildinfo
+review-result.json
+
+# Capacitor (keep platform directories so repo is ready for build)
+# android/
+# ios/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Cloudflare
+.wrangler
+# wrangler.toml
