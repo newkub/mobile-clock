@@ -1,15 +1,11 @@
-import { createSignal, createMemo, createEffect, For, Show } from "solid-js";
+import { createSignal, createMemo, createEffect, createRoot, onCleanup, For, Show } from "solid-js";
 import { CircleProgress } from "../../components/CircleProgress";
 import { Button } from "../../components/Button";
-import { useInterval } from "../../hooks/use-interval";
+import { useShortcuts } from "../../hooks/use-shortcuts";
 import { haptic } from "../../lib/capacitor";
 import { playBeep } from "../../lib/audio";
 import { formatDuration } from "../../lib/time";
 import { appStore, addPomodoroSession } from "../../store/app";
-
-const FOCUS_SECONDS = 25 * 60;
-const SHORT_BREAK = 5 * 60;
-const LONG_BREAK = 15 * 60;
 
 type Phase = "focus" | "short" | "long";
 
@@ -21,21 +17,71 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10);
 }
 
-export function PomodoroTab() {
-  const [phase, setPhase] = createSignal<Phase>("focus");
-  const [remaining, setRemaining] = createSignal(FOCUS_SECONDS);
-  const [running, setRunning] = createSignal(false);
-  const [completedInSession, setCompletedInSession] = createSignal(0);
+// Durations come from global settings (minutes) so users can customize them.
+function phaseSeconds(p: Phase) {
+  const g = appStore.globalSettings;
+  const mins = p === "focus" ? g.pomodoroFocus : p === "short" ? g.pomodoroShort : g.pomodoroLong;
+  return Math.max(1, mins) * 60;
+}
 
-  const total = createMemo(() =>
-    phase() === "focus" ? FOCUS_SECONDS : phase() === "short" ? SHORT_BREAK : LONG_BREAK
-  );
+// Module-scoped state: survives tab switches. The countdown is driven by a
+// wall-clock deadline so phases complete even while the tab is unmounted.
+const [phase, setPhase] = createSignal<Phase>("focus");
+const [remaining, setRemaining] = createSignal(phaseSeconds("focus"));
+const [running, setRunning] = createSignal(false);
+const [completedInSession, setCompletedInSession] = createSignal(0);
+let endsAtRef = 0;
 
-  const tick = () => {
-    setRemaining((r) => Math.max(0, r - 1));
-  };
+const POMO_LS_KEY = "wrikka-pomodoro-state";
 
-  useInterval(tick, () => (running() ? 1000 : null));
+// Restore a running/paused pomodoro from a previous session.
+try {
+  const raw = localStorage.getItem(POMO_LS_KEY);
+  if (raw) {
+    const s = JSON.parse(raw);
+    if (s.phase === "focus" || s.phase === "short" || s.phase === "long") setPhase(s.phase);
+    if (typeof s.completed === "number") setCompletedInSession(s.completed);
+    if (s.running && typeof s.endsAt === "number") {
+      endsAtRef = s.endsAt;
+      setRemaining(Math.max(0, Math.ceil((s.endsAt - Date.now()) / 1000)));
+      setRunning(remaining() > 0);
+    } else if (typeof s.remaining === "number") {
+      setRemaining(Math.max(0, s.remaining));
+    }
+  }
+} catch {
+  // ignore corrupt state
+}
+
+function syncDeadline() {
+  endsAtRef = Date.now() + remaining() * 1000;
+}
+
+// Keep the countdown + phase transitions alive outside the component so they
+// keep working while another sub-tab is mounted.
+createRoot(() => {
+  createEffect(() => {
+    const snapshot = {
+      phase: phase(),
+      remaining: remaining(),
+      running: running(),
+      endsAt: endsAtRef,
+      completed: completedInSession(),
+    };
+    try {
+      localStorage.setItem(POMO_LS_KEY, JSON.stringify(snapshot));
+    } catch {
+      // ignore
+    }
+  });
+
+  createEffect(() => {
+    if (!running()) return;
+    const id = setInterval(() => {
+      setRemaining(Math.max(0, Math.ceil((endsAtRef - Date.now()) / 1000)));
+    }, 250);
+    onCleanup(() => clearInterval(id));
+  });
 
   createEffect(() => {
     if (running() && remaining() <= 0) {
@@ -43,25 +89,29 @@ export function PomodoroTab() {
       haptic("success");
 
       if (phase() === "focus") {
-        addPomodoroSession({ date: todayStr(), completedCycles: 1, totalFocusSeconds: FOCUS_SECONDS });
+        addPomodoroSession({ date: todayStr(), completedCycles: 1, totalFocusSeconds: phaseSeconds("focus") });
         const nextCount = completedInSession() + 1;
         setCompletedInSession(nextCount);
-        if (nextCount % 4 === 0) {
-          setPhase("long");
-          setRemaining(LONG_BREAK);
-        } else {
-          setPhase("short");
-          setRemaining(SHORT_BREAK);
-        }
+        const nextPhase: Phase = nextCount % 4 === 0 ? "long" : "short";
+        setPhase(nextPhase);
+        setRemaining(phaseSeconds(nextPhase));
+        // Auto-start the break: the countdown keeps running.
+        endsAtRef = Date.now() + phaseSeconds(nextPhase) * 1000;
       } else {
         setPhase("focus");
-        setRemaining(FOCUS_SECONDS);
+        setRemaining(phaseSeconds("focus"));
         setRunning(false);
       }
     }
   });
+});
+
+export function PomodoroTab() {
+  const total = createMemo(() => phaseSeconds(phase()));
 
   const start = () => {
+    if (remaining() <= 0) setRemaining(total());
+    syncDeadline();
     setRunning(true);
   };
 
@@ -78,8 +128,13 @@ export function PomodoroTab() {
   function manualPhase(next: Phase) {
     setRunning(false);
     setPhase(next);
-    setRemaining(next === "focus" ? FOCUS_SECONDS : next === "short" ? SHORT_BREAK : LONG_BREAK);
+    setRemaining(phaseSeconds(next));
   }
+
+  useShortcuts({
+    space: () => (running() ? pause() : start()),
+    r: reset,
+  });
 
   const progress = createMemo(() => (total() - remaining()) / total());
   const color = createMemo(() => (phase() === "focus" ? "#6366f1" : phase() === "short" ? "#22c55e" : "#a855f7"));
@@ -94,11 +149,19 @@ export function PomodoroTab() {
   const phaseIcon: Record<Phase, string> = {
     focus: "i-mdi-brain",
     short: "i-mdi-coffee",
-    long: "i-mdi-coffee",
+    long: "i-mdi-sofa",
+  };
+  const phaseLabel: Record<Phase, string> = {
+    focus: "Focus",
+    short: "Short break",
+    long: "Long break",
   };
 
   return (
-    <div class="tab-content flex h-full flex-col items-center gap-5 overflow-y-auto p-5 pb-28">
+    <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
+      <div class="mx-auto flex max-w-4xl flex-col items-center gap-5 md:grid md:grid-cols-2 md:items-start md:gap-10">
+        {/* Left column: phase pills + dial + controls */}
+        <div class="flex w-full flex-col items-center gap-5">
       <div class="flex rounded-full bg-surface-2 p-1">
         <For each={["focus", "short", "long"] as Phase[]}>
           {(p) => (
@@ -116,7 +179,7 @@ export function PomodoroTab() {
               aria-label={`Switch to ${p} phase`}
             >
               <span class={`${phaseIcon[p]} mr-1 h-4 w-4`} />
-              {p}
+              {phaseLabel[p]}
             </button>
           )}
         </For>
@@ -128,7 +191,7 @@ export function PomodoroTab() {
             <p class="text-6xl font-bold tabular-nums text-glow" style={{ color: color() }}>
               {format(remaining())}
             </p>
-            <p class="mt-1 text-sm capitalize text-text-secondary">{phase()} time</p>
+            <p class="mt-1 text-sm text-text-secondary">{phaseLabel[phase()]} time</p>
           </div>
         </CircleProgress>
       </div>
@@ -151,7 +214,15 @@ export function PomodoroTab() {
         </Button>
       </div>
 
-      <div class="grid w-full max-w-sm grid-cols-2 gap-3">
+          <p class="hidden text-xs text-muted md:block">
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">Space</kbd> start/pause ·{" "}
+            <kbd class="rounded bg-surface-3 px-1.5 py-0.5">R</kbd> reset
+          </p>
+        </div>
+
+        {/* Right column: stats */}
+        <div class="flex w-full max-w-sm flex-col gap-3 md:max-w-none">
+      <div class="grid w-full grid-cols-2 gap-3">
         <div class="rounded-2xl bg-surface-2 p-4 text-center">
           <p class="text-3xl font-bold text-primary">{todayCycles()}</p>
           <p class="text-xs text-text-secondary">Today</p>
@@ -162,12 +233,25 @@ export function PomodoroTab() {
         </div>
       </div>
 
+      <div class="rounded-2xl bg-surface-2 p-4">
+        <h3 class="mb-1 flex items-center gap-2 text-sm font-semibold text-text-secondary">
+          <span class="i-mdi-information-outline h-4 w-4" /> How it works
+        </h3>
+        <p class="text-xs leading-relaxed text-text-secondary">
+          {appStore.globalSettings.pomodoroFocus} min focus → {appStore.globalSettings.pomodoroShort} min short break.
+          After 4 focus rounds, take a {appStore.globalSettings.pomodoroLong} min long break.
+          Breaks start automatically when a focus round ends.
+        </p>
+      </div>
+
       <Show when={todayCycles() > 0 && todayCycles() % 4 === 0}>
         <div class="flex items-center gap-2 rounded-2xl bg-success/10 p-3 text-success">
           <span class="i-mdi-trophy h-5 w-5" />
           <span class="font-medium">Great focus streak! Take a long break.</span>
         </div>
       </Show>
+        </div>
+      </div>
     </div>
   );
 }

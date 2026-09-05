@@ -1,20 +1,12 @@
 import { For } from "solid-js";
-import { appStore, setClockSubTab, SUB_TAB_ORDER, type ClockSubTab } from "../store/app";
+import { appStore, setClockSubTab, SUB_TAB_ORDER } from "../store/app";
 import { haptic } from "../lib/capacitor";
-
-const subTabMeta: Record<ClockSubTab, { label: string; icon: string }> = {
-  clock: { label: "Clock", icon: "i-mdi-clock-outline" },
-  alarm: { label: "Alarm", icon: "i-mdi-alarm" },
-  stopwatch: { label: "Stopwatch", icon: "i-mdi-timer-outline" },
-  timer: { label: "Timer", icon: "i-mdi-timer-sand" },
-  pomodoro: { label: "Pomodoro", icon: "i-mdi-brain" },
-  reminder: { label: "Reminder", icon: "i-mdi-bell-outline" },
-};
+import { subTabMeta } from "./nav-meta";
 
 export function TabBar() {
   return (
     <nav
-      class="glass mx-3 mb-2 flex max-w-full justify-between gap-1 rounded-3xl p-1.5 pb-safe overflow-x-auto"
+      class="glass mx-3 mb-2 flex max-w-full justify-between gap-1 overflow-x-auto rounded-3xl p-1.5 pb-safe md:hidden"
       aria-label="Clock features"
     >
       <For each={SUB_TAB_ORDER}>

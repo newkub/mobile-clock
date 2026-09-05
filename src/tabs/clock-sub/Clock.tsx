@@ -1,6 +1,7 @@
 import { createSignal, createMemo, onMount, onCleanup, Show } from "solid-js";
 import { AnalogClock } from "../../components/AnalogClock";
 import { appStore } from "../../store/app";
+import { useIsMd } from "../../hooks/use-media-query";
 
 function gmtOffset(d: Date): string {
   const mins = -d.getTimezoneOffset();
@@ -13,6 +14,7 @@ function gmtOffset(d: Date): string {
 
 export function ClockView() {
   const [now, setNow] = createSignal(new Date());
+  const isMd = useIsMd();
 
   onMount(() => {
     const t = setInterval(() => setNow(new Date()), 250);
@@ -37,35 +39,35 @@ export function ClockView() {
   });
 
   return (
-    <div class="tab-content flex h-full flex-col items-center gap-6 overflow-y-auto p-5 pb-28">
-      <div class="mt-4">
-        <AnalogClock size={280} />
-      </div>
+    <div class="tab-content flex h-full flex-col items-center gap-6 overflow-y-auto p-5 pb-28 md:flex-row md:items-center md:justify-center md:gap-14 md:pb-8">
+      <AnalogClock size={isMd() ? 360 : 280} />
 
-      <div class="text-center">
-        <p class="text-5xl font-bold tabular-nums text-glow">
-          {now().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
-        </p>
-        <p class="mt-2 text-lg text-text-secondary">
-          {now().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
-        </p>
-        <p class="mt-1 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-sm text-text-secondary">
-          <span class="i-mdi-earth h-4 w-4 text-primary" />
-          {timeZone} · {offset()}
-        </p>
-      </div>
+      <div class="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
+        <div>
+          <p class="text-5xl font-bold tabular-nums text-glow md:text-7xl">
+            {now().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
+          </p>
+          <p class="mt-2 text-lg text-text-secondary md:text-xl">
+            {now().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+          </p>
+          <p class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1 text-sm text-text-secondary">
+            <span class="i-mdi-earth h-4 w-4 text-primary" />
+            {timeZone} · {offset()}
+          </p>
+        </div>
 
-      <Show when={nextAlarm()}>
-        {(alarm) => (
-          <div class="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm">
-            <span class="i-mdi-alarm h-4 w-4 text-primary" />
-            <span class="text-text">
-              Next: {alarm().label} at{" "}
-              {alarm().date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
-            </span>
-          </div>
-        )}
-      </Show>
+        <Show when={nextAlarm()}>
+          {(alarm) => (
+            <div class="flex items-center gap-2 rounded-2xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm">
+              <span class="i-mdi-alarm h-4 w-4 text-primary" />
+              <span class="text-text">
+                Next: {alarm().label} at{" "}
+                {alarm().date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
+              </span>
+            </div>
+          )}
+        </Show>
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import { requestNotificationPermission } from "../lib/notifications";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { Switch } from "./Switch";
+import { Modal } from "./Modal";
 
 export function SettingsModal(props: { onClose: () => void }) {
 	const [key, setKey] = createSignal(appStore.elevenLabsKey);
@@ -30,8 +31,7 @@ export function SettingsModal(props: { onClose: () => void }) {
 	}
 
 	return (
-		<div class="fixed inset-0 z-50 flex items-end justify-center bg-black/60 sm:items-center sm:p-4">
-			<div class="flex max-h-[85vh] w-full max-w-md flex-col rounded-t-3xl bg-surface p-6 sm:rounded-3xl">
+		<Modal onClose={props.onClose} panelClass="flex max-h-[85vh] flex-col" aria-label="Settings">
 				<div class="mb-5 flex items-center justify-between">
 					<h2 class="flex items-center gap-2 text-xl font-bold text-text">
 						<span class="i-mdi-cog h-6 w-6 text-primary" /> Settings
@@ -113,6 +113,42 @@ export function SettingsModal(props: { onClose: () => void }) {
 						</div>
 					</section>
 
+					{/* Pomodoro durations */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-brain h-4 w-4" /> Pomodoro
+						</h3>
+						<div class="grid grid-cols-3 gap-3 rounded-2xl bg-surface-2 p-4">
+							<For
+								each={
+									[
+										{ key: "pomodoroFocus", label: "Focus" },
+										{ key: "pomodoroShort", label: "Short" },
+										{ key: "pomodoroLong", label: "Long" },
+									] as const
+								}
+							>
+								{(f) => (
+									<div>
+										<label class="mb-1 block text-center text-xs text-text-secondary">{f.label} (min)</label>
+										<input
+											type="number"
+											min={1}
+											max={120}
+											value={appStore.globalSettings[f.key]}
+											onInput={(e) => {
+												const v = Math.max(1, Math.min(120, parseInt(e.currentTarget.value) || 1));
+												setGlobalSetting(f.key, v);
+											}}
+											class="w-full rounded-xl border border-border bg-surface-3 px-2 py-2 text-center text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+											aria-label={`${f.label} minutes`}
+										/>
+									</div>
+								)}
+							</For>
+						</div>
+					</section>
+
 					{/* AI alarm voice */}
 					<section>
 						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
@@ -146,7 +182,6 @@ export function SettingsModal(props: { onClose: () => void }) {
 						</div>
 					</section>
 				</div>
-			</div>
-		</div>
+		</Modal>
 	);
 }

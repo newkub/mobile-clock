@@ -84,50 +84,49 @@ export function ReminderTab() {
   }
 
   return (
-    <div class="tab-content flex h-full flex-col gap-4 overflow-y-auto p-5 pb-28">
-      <div class="rounded-2xl border border-dashed border-border bg-surface-2/50 p-4">
-        <h3 class="text-sm font-semibold text-text-secondary">Add from notification panel</h3>
-        <p class="mt-1 text-xs text-muted">
-          Share to app with <code>?title=&amp;date=&amp;time=</code> query
-        </p>
-      </div>
-
-      <Show when={future().length === 0}>
-        <EmptyState
-          icon="i-mdi-bell"
-          title="No upcoming reminders"
-          subtitle="Add a reminder to get started"
-        />
-      </Show>
-
-      <For each={future()}>
-        {(r) => (
-          <ReminderCard
-            reminder={r}
-            onToggle={() => handleToggle(r)}
-            onRemove={() => handleRemove(r)}
-            onUpdate={(patch) => updateReminder(r.id, patch)}
+    <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
+      <div class="mx-auto flex max-w-3xl flex-col gap-4">
+        <Show when={future().length === 0}>
+          <EmptyState
+            icon="i-mdi-bell"
+            title="No upcoming reminders"
+            subtitle="Add a reminder to get started"
           />
-        )}
-      </For>
+        </Show>
 
-      <Show when={past().length > 0}>
-        <h3 class="text-sm font-semibold text-text-secondary">Past</h3>
-        <For each={past()}>
-          {(r) => (
-            <ReminderCard
-              reminder={r}
-              onToggle={() => handleToggle(r)}
-              onRemove={() => handleRemove(r)}
-              onUpdate={(patch) => updateReminder(r.id, patch)}
-            />
-          )}
-        </For>
-      </Show>
+        <div class="grid gap-4 md:grid-cols-2">
+          <For each={future()}>
+            {(r) => (
+              <ReminderCard
+                reminder={r}
+                onToggle={() => handleToggle(r)}
+                onRemove={() => handleRemove(r)}
+                onUpdate={(patch) => updateReminder(r.id, patch)}
+              />
+            )}
+          </For>
+        </div>
 
-      <Button onClick={() => setIsAdding(true)} class="mt-2 w-full" size="lg" aria-label="New reminder">
-        <span class="i-mdi-plus mr-2 h-5 w-5" /> New Reminder
-      </Button>
+        <Show when={past().length > 0}>
+          <h3 class="text-sm font-semibold text-text-secondary">Past</h3>
+          <div class="grid gap-4 md:grid-cols-2">
+            <For each={past()}>
+              {(r) => (
+                <ReminderCard
+                  reminder={r}
+                  onToggle={() => handleToggle(r)}
+                  onRemove={() => handleRemove(r)}
+                  onUpdate={(patch) => updateReminder(r.id, patch)}
+                />
+              )}
+            </For>
+          </div>
+        </Show>
+
+        <Button onClick={() => setIsAdding(true)} class="mt-2 w-full" size="lg" aria-label="New reminder">
+          <span class="i-mdi-plus mr-2 h-5 w-5" /> New Reminder
+        </Button>
+      </div>
 
       <Show when={isAdding()}>
         <AddReminderModal

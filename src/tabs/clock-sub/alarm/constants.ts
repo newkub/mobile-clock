@@ -11,3 +11,16 @@ export const DAY_LABELS: Record<Day, string> = {
   SA: "S",
   SU: "S",
 };
+
+const WEEKDAYS: Day[] = ["MO", "TU", "WE", "TH", "FR"];
+const WEEKEND: Day[] = ["SA", "SU"];
+
+/** Human-readable summary for an alarm's repeat pattern. */
+export function repeatSummary(repeat: Day[]): string {
+  const has = (d: Day) => repeat.includes(d);
+  if (repeat.length === 0) return "Once";
+  if (repeat.length === 7) return "Every day";
+  if (WEEKDAYS.every(has) && !WEEKEND.some(has)) return "Weekdays";
+  if (WEEKEND.every(has) && !WEEKDAYS.some(has)) return "Weekends";
+  return DAYS.filter(has).map((d) => DAY_LABELS[d]).join(" ");
+}

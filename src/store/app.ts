@@ -8,11 +8,21 @@ export interface GlobalSettings {
   haptics: boolean;
   sound: boolean;
   notifications: boolean;
+  /** Pomodoro durations in minutes. */
+  pomodoroFocus: number;
+  pomodoroShort: number;
+  pomodoroLong: number;
 }
 
 export interface StatusMessage {
   text: string;
   type: "info" | "success" | "warning" | "error";
+}
+
+export interface RingingAlert {
+  kind: "alarm" | "reminder";
+  id: string;
+  title: string;
 }
 
 const STORAGE_KEY = "wrikka-clock-store";
@@ -22,6 +32,9 @@ const defaultGlobal: GlobalSettings = {
   haptics: true,
   sound: true,
   notifications: true,
+  pomodoroFocus: 25,
+  pomodoroShort: 5,
+  pomodoroLong: 15,
 };
 
 const defaultPresets: TimerPreset[] = [
@@ -42,6 +55,8 @@ export interface AppState {
   pomodoroSessions: PomodoroSession[];
   elevenLabsKey: string;
   settingsOpen: boolean;
+  /** Currently ringing in-app alert (web only; native uses OS notifications). */
+  ringing: RingingAlert | null;
 }
 
 export const initialState: AppState = {
@@ -54,6 +69,7 @@ export const initialState: AppState = {
   pomodoroSessions: [],
   elevenLabsKey: "",
   settingsOpen: false,
+  ringing: null,
 };
 
 export const SUB_TAB_ORDER: ClockSubTab[] = [

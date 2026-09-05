@@ -20,7 +20,7 @@ export function StatusToast() {
     <Show when={appStore.status} fallback={null}>
       {(status) => (
         <div
-          class="fixed left-1/2 top-0 z-[80] w-full max-w-md -translate-x-1/2 px-4 pt-safe pt-4"
+          class="fixed left-1/2 top-0 z-[80] w-full max-w-md -translate-x-1/2 px-4 pt-[calc(env(safe-area-inset-top)+1rem)]"
           role="status"
           aria-live="polite"
           aria-atomic="true"
