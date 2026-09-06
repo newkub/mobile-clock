@@ -6,6 +6,7 @@ import App from "./App";
 import { initCapacitor } from "./lib/capacitor";
 import { appStore } from "./store/app";
 import { requestNotificationPermission } from "./lib/notifications";
+import { initPwaInstall } from "./lib/pwa";
 
 initCapacitor().catch(() => null);
 
@@ -20,6 +21,7 @@ if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/sw.js")
       .catch(() => null);
+    initPwaInstall();
   });
 }
 

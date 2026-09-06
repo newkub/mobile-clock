@@ -1,6 +1,7 @@
 import { createMemo, createSignal, onCleanup, onMount, Show } from "solid-js";
 import { appStore } from "../../../store/app";
 import { EmptyState } from "../../../components/EmptyState";
+import { formatShortTime } from "../../../lib/time";
 
 function ringsIn(target: Date, now: Date): string {
   const mins = Math.max(0, Math.round((target.getTime() - now.getTime()) / 60000));
@@ -47,7 +48,7 @@ export function CurrentAlarmCard() {
       <div class="rounded-3xl bg-gradient-to-br from-primary/20 to-accent/10 p-6 text-center glow-primary">
         <p class="text-sm text-text-secondary">Next alarm</p>
         <p class="mt-2 text-5xl font-bold text-glow">
-          {next()?.date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
+          {next() ? formatShortTime(next()!.date) : ""}
         </p>
         <p class="mt-1 text-text-secondary">
           {next()?.date.toLocaleDateString(undefined, { weekday: "long" })}

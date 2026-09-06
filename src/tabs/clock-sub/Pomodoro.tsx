@@ -57,6 +57,22 @@ function syncDeadline() {
   endsAtRef = Date.now() + remaining() * 1000;
 }
 
+function runPomodoro() {
+  if (remaining() <= 0) setRemaining(phaseSeconds(phase()));
+  syncDeadline();
+  setRunning(true);
+  haptic("medium");
+}
+
+/** Quick action from the Clock tab: switch to focus and start immediately. */
+export function quickStartFocus() {
+  setPhase("focus");
+  setRemaining(phaseSeconds("focus"));
+  setRunning(false);
+  setCompletedInSession(0);
+  runPomodoro();
+}
+
 // Keep the countdown + phase transitions alive outside the component so they
 // keep working while another sub-tab is mounted.
 createRoot(() => {
@@ -110,9 +126,7 @@ export function PomodoroTab() {
   const total = createMemo(() => phaseSeconds(phase()));
 
   const start = () => {
-    if (remaining() <= 0) setRemaining(total());
-    syncDeadline();
-    setRunning(true);
+    runPomodoro();
   };
 
   const pause = () => {

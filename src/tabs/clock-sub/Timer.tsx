@@ -47,6 +47,22 @@ try {
   // ignore corrupt state
 }
 
+function runTimer() {
+  if (remaining() <= 0) setRemaining(seconds());
+  endsAtRef = Date.now() + remaining() * 1000;
+  setRunning(true);
+  haptic("medium");
+}
+
+/** Quick action from the Clock tab: start a timer with the given seconds and color. */
+export function quickStartTimer(totalSeconds: number, color: string = "#6366f1") {
+  setSeconds(totalSeconds);
+  setRemaining(totalSeconds);
+  setActiveColor(color);
+  setRunning(false);
+  runTimer();
+}
+
 // Keep the countdown + finish side effects alive outside the component so they
 // keep working while another sub-tab is mounted.
 createRoot(() => {
@@ -84,10 +100,7 @@ createRoot(() => {
 
 export function TimerTab() {
   function start() {
-    if (remaining() <= 0) setRemaining(seconds());
-    endsAtRef = Date.now() + remaining() * 1000;
-    setRunning(true);
-    haptic("medium");
+    runTimer();
   }
 
   function pause() {
