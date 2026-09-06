@@ -130,6 +130,15 @@ export function SettingsModal(props: { onClose: () => void }) {
 											)}
 										</For>
 									</div>
+									<Button
+										onClick={() => { haptic("light"); if (appStore.globalSettings.sound) playFinishAlert("timer"); else showStatus("Timer sounds are disabled", "info"); }}
+										variant="secondary"
+										size="sm"
+										class="mt-2 w-full"
+										aria-label="Test current sound theme"
+									>
+										<span class="i-mdi-volume-high mr-2 h-4 w-4" /> Test sound
+									</Button>
 								</div>
 							<div class="flex items-center justify-between">
 								<div>

@@ -97,6 +97,13 @@ export function ReminderTab() {
     showStatus("Reminder removed", "info");
   }
 
+  function clearPast() {
+    if (!window.confirm(`Clear ${past().length} past reminder${past().length > 1 ? "s" : ""}?`)) return;
+    for (const r of pastFiltered()) removeReminder(r.id);
+    haptic("success");
+    showStatus("Past reminders cleared", "info");
+  }
+
   return (
     <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
       <div class="mx-auto flex max-w-3xl flex-col gap-4">
@@ -136,7 +143,16 @@ export function ReminderTab() {
         </div>
 
         <Show when={past().length > 0}>
-          <h3 class="text-sm font-semibold text-text-secondary">Past</h3>
+          <div class="flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-text-secondary">Past</h3>
+            <button
+              onClick={clearPast}
+              class="flex items-center gap-1 text-xs font-medium text-danger transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-danger/50"
+              aria-label="Clear past reminders"
+            >
+              <span class="i-mdi-delete-sweep h-4 w-4" /> Clear past
+            </button>
+          </div>
           <div class="grid gap-4 md:grid-cols-2">
             <For each={pastFiltered()}>
               {(r) => (

@@ -1,5 +1,6 @@
 import { createSignal, createMemo, onMount, onCleanup, Show, For } from "solid-js";
 import { AnalogClock } from "../../components/AnalogClock";
+import { FullscreenButton } from "../../components/FullscreenButton";
 import { appStore } from "../../store/app";
 import { useIsMd } from "../../hooks/use-media-query";
 import { formatShortTime, formatTimeInZone } from "../../lib/time";
@@ -47,7 +48,8 @@ export function ClockView() {
   });
 
   return (
-    <div class="tab-content flex h-full flex-col items-center gap-6 overflow-y-auto p-5 pb-28 md:flex-row md:items-center md:justify-center md:gap-14 md:pb-8">
+    <div class="tab-content relative flex h-full flex-col items-center gap-6 overflow-y-auto p-5 pb-28 md:flex-row md:items-center md:justify-center md:gap-14 md:pb-8">
+      <FullscreenButton class="absolute right-4 top-4 md:right-6 md:top-6" />
       <AnalogClock size={isMd() ? 360 : 280} />
 
       <div class="flex flex-col items-center gap-4 text-center md:items-start md:text-left">

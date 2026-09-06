@@ -1,5 +1,6 @@
 import { createSignal, createMemo, createEffect, createRoot, For, Show } from "solid-js";
 import { CircleProgress } from "../../components/CircleProgress";
+import { FullscreenButton } from "../../components/FullscreenButton";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { useInterval } from "../../hooks/use-interval";
@@ -129,7 +130,8 @@ export function StopwatchTab() {
   }
 
   return (
-    <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
+    <div class="tab-content relative h-full overflow-y-auto p-5 pb-28 md:pb-8">
+      <FullscreenButton class="absolute right-4 top-4 md:right-6 md:top-6" />
       <div class="mx-auto flex max-w-4xl flex-col items-center gap-6 md:grid md:grid-cols-2 md:items-start md:gap-10">
         {/* Left column: dial + controls */}
         <div class="flex w-full flex-col items-center gap-6">
