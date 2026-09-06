@@ -6,6 +6,7 @@ import { Button } from "../../../components/Button";
 import { TimePicker } from "../../../components/TimePicker";
 import { haptic } from "../../../lib/capacitor";
 import { scheduleAlarm, cancelAlarm } from "../../../lib/notifications";
+import { formatHourMinute } from "../../../lib/time";
 import { hashId } from "../../../lib/hash";
 import { DAYS, DAY_LABELS, repeatSummary } from "./constants";
 import { AiSoundEditor } from "./AiSoundEditor";
@@ -61,7 +62,7 @@ export function AlarmItem(props: { alarm: Alarm }) {
         >
           <div>
             <p class="text-3xl font-bold tabular-nums">
-              {props.alarm.hour.toString().padStart(2, "0")}:{props.alarm.minute.toString().padStart(2, "0")}
+              {formatHourMinute(props.alarm.hour, props.alarm.minute)}
             </p>
             <p class="text-sm text-text-secondary">{props.alarm.label || "Alarm"}</p>
           </div>

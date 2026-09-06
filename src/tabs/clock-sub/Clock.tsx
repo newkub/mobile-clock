@@ -2,6 +2,12 @@ import { createSignal, createMemo, onMount, onCleanup, Show } from "solid-js";
 import { AnalogClock } from "../../components/AnalogClock";
 import { appStore } from "../../store/app";
 import { useIsMd } from "../../hooks/use-media-query";
+import { formatShortTime } from "../../lib/time";
+import { setClockSubTab } from "../../store/actions";
+import { haptic } from "../../lib/capacitor";
+import { showStatus } from "../../lib/status";
+import { quickStartTimer } from "./Timer";
+import { quickStartFocus } from "./Pomodoro";
 
 function gmtOffset(d: Date): string {
   const mins = -d.getTimezoneOffset();
@@ -45,7 +51,7 @@ export function ClockView() {
       <div class="flex flex-col items-center gap-4 text-center md:items-start md:text-left">
         <div>
           <p class="text-5xl font-bold tabular-nums text-glow md:text-7xl">
-            {now().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}
+            {formatShortTime(now(), true)}
           </p>
           <p class="mt-2 text-lg text-text-secondary md:text-xl">
             {now().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
@@ -62,11 +68,42 @@ export function ClockView() {
               <span class="i-mdi-alarm h-4 w-4 text-primary" />
               <span class="text-text">
                 Next: {alarm().label} at{" "}
-                {alarm().date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
+                {formatShortTime(alarm().date)}
               </span>
             </div>
           )}
         </Show>
+
+        <div class="mt-2 flex flex-wrap justify-center gap-2 md:justify-start">
+          <button
+            onClick={() => {
+              haptic("light");
+              setClockSubTab("alarm");
+              showStatus("Tap New Alarm to add one", "info");
+            }}
+            class="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-sm font-medium text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text"
+          >
+            <span class="i-mdi-alarm-plus h-4 w-4" /> Add alarm
+          </button>
+          <button
+            onClick={() => {
+              quickStartTimer(300, "#3b82f6");
+              setClockSubTab("timer");
+            }}
+            class="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-sm font-medium text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text"
+          >
+            <span class="i-mdi-timer h-4 w-4" /> 5 min timer
+          </button>
+          <button
+            onClick={() => {
+              quickStartFocus();
+              setClockSubTab("pomodoro");
+            }}
+            class="inline-flex items-center gap-1.5 rounded-full bg-surface-2 px-3 py-1.5 text-sm font-medium text-text-secondary transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 hover:text-text"
+          >
+            <span class="i-mdi-brain h-4 w-4" /> Focus 25m
+          </button>
+        </div>
       </div>
     </div>
   );

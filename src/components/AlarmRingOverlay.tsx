@@ -4,6 +4,7 @@ import { Button } from "./Button";
 import { haptic } from "../lib/capacitor";
 import { playBeep } from "../lib/audio";
 import { showStatus } from "../lib/status";
+import { formatShortTime } from "../lib/time";
 
 /**
  * Full-screen alert shown while an alarm/reminder is ringing (web/PWA).
@@ -73,7 +74,7 @@ export function AlarmRingOverlay() {
 
           <div class="text-center">
             <p class="text-6xl font-bold tabular-nums text-glow">
-              {now().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false })}
+              {formatShortTime(now())}
             </p>
             <p class="mt-3 text-2xl font-semibold text-text">{r().title}</p>
             <p class="mt-1 text-sm text-text-secondary">

@@ -3,6 +3,7 @@ import { Button } from "../../../components/Button";
 import { Switch } from "../../../components/Switch";
 import { type Reminder } from "../../../store/app";
 import { repeatLabels } from "./repeatLabels";
+import { formatShortTime } from "../../../lib/time";
 
 export function ReminderCard(props: {
   reminder: Reminder;
@@ -25,12 +26,10 @@ export function ReminderCard(props: {
         >
           <p class="font-semibold text-text">{props.reminder.title}</p>
           <p class="text-sm text-text-secondary">
-            {new Date(`${props.reminder.date}T${props.reminder.time}`).toLocaleString("th-TH", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}{" "}
+            {(() => {
+              const d = new Date(`${props.reminder.date}T${props.reminder.time}`);
+              return `${d.toLocaleDateString(undefined, { day: "numeric", month: "short" })} ${formatShortTime(d)}`;
+            })()}{" "}
             · {repeatLabels[props.reminder.repeat]}
           </p>
         </button>

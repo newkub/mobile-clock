@@ -1,6 +1,6 @@
 import { produce } from "solid-js/store";
 import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset } from "../types";
-import { appStore, initialState, setStore, queuePersist, type GlobalSettings } from "./app";
+import { appStore, initialState, setStore, queuePersist, mergeWithDefault, type GlobalSettings } from "./app";
 
 export function setClockSubTab(tab: ClockSubTab) {
   setStore("clockSubTab", tab);
@@ -107,7 +107,37 @@ export function closeSettings() {
   setStore("settingsOpen", false);
 }
 
+export function completeOnboarding() {
+  setStore("hasCompletedOnboarding", true);
+  queuePersist();
+}
+
 export function resetStore() {
   setStore(initialState);
   queuePersist();
+}
+
+/** Export all persisted app data as a JSON string (transient UI state excluded). */
+export function exportAppData(): string {
+  const snapshot = { ...appStore, ringing: null, settingsOpen: false, status: null };
+  return JSON.stringify(snapshot, null, 2);
+}
+
+/** Restore app data from a previously exported JSON string. Returns success. */
+export function importAppData(json: string): boolean {
+  try {
+    const parsed = JSON.parse(json);
+    const fresh = mergeWithDefault(parsed);
+    setStore(
+      produce((s) => {
+        for (const key of Object.keys(initialState) as (keyof typeof initialState)[]) {
+          (s as any)[key] = (fresh as any)[key];
+        }
+      }),
+    );
+    queuePersist();
+    return true;
+  } catch {
+    return false;
+  }
 }

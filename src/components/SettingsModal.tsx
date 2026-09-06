@@ -7,6 +7,7 @@ import { Button } from "./Button";
 import { Input } from "./Input";
 import { Switch } from "./Switch";
 import { Modal } from "./Modal";
+import { SettingsDataSection } from "./SettingsDataSection";
 
 export function SettingsModal(props: { onClose: () => void }) {
 	const [key, setKey] = createSignal(appStore.elevenLabsKey);
@@ -28,6 +29,11 @@ export function SettingsModal(props: { onClose: () => void }) {
 			granted ? "Notifications enabled" : "Permission denied by system",
 			granted ? "success" : "warning",
 		);
+	}
+
+	function setTimeFormat(format: "12h" | "24h") {
+		setGlobalSetting("timeFormat", format);
+		haptic("light");
 	}
 
 	return (
@@ -113,6 +119,30 @@ export function SettingsModal(props: { onClose: () => void }) {
 						</div>
 					</section>
 
+					{/* Time format */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-clock-time-four-outline h-4 w-4" /> Time format
+						</h3>
+						<div class="flex gap-2 rounded-2xl bg-surface-2 p-1">
+							<For each={["24h", "12h"] as const}>
+								{(f) => (
+									<button
+										onClick={() => setTimeFormat(f)}
+										class={`flex-1 rounded-xl py-2 text-sm font-medium transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+											appStore.globalSettings.timeFormat === f
+												? "bg-primary text-white"
+												: "bg-transparent text-text-secondary hover:text-text"
+										}`}
+										aria-label={`Use ${f} time`}
+									>
+										{f}
+									</button>
+								)}
+							</For>
+						</div>
+					</section>
+
 					{/* Pomodoro durations */}
 					<section>
 						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
@@ -169,6 +199,8 @@ export function SettingsModal(props: { onClose: () => void }) {
 							</Button>
 						</div>
 					</section>
+
+					<SettingsDataSection />
 
 					{/* About */}
 					<section>

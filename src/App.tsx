@@ -7,6 +7,7 @@ import { TabBar } from "./components/TabBar";
 import { StatusToast } from "./components/StatusToast";
 import { SettingsModal } from "./components/SettingsModal";
 import { AlarmRingOverlay } from "./components/AlarmRingOverlay";
+import { OnboardingOverlay } from "./components/OnboardingOverlay";
 import { ClockView } from "./tabs/clock-sub/Clock";
 import { AlarmTab } from "./tabs/clock-sub/Alarm";
 import { StopwatchTab } from "./tabs/clock-sub/Stopwatch";
@@ -106,6 +107,7 @@ export default function App() {
       <TabBar />
       {appStore.settingsOpen && <SettingsModal onClose={closeSettings} />}
       <AlarmRingOverlay />
+      {!appStore.hasCompletedOnboarding && !appStore.ringing && <OnboardingOverlay />}
     </div>
   );
 }

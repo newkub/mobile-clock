@@ -12,6 +12,8 @@ export interface GlobalSettings {
   pomodoroFocus: number;
   pomodoroShort: number;
   pomodoroLong: number;
+  /** "12h" or "24h" — controls time display across the app. */
+  timeFormat: "12h" | "24h";
 }
 
 export interface StatusMessage {
@@ -35,6 +37,7 @@ const defaultGlobal: GlobalSettings = {
   pomodoroFocus: 25,
   pomodoroShort: 5,
   pomodoroLong: 15,
+  timeFormat: "24h",
 };
 
 const defaultPresets: TimerPreset[] = [
@@ -57,6 +60,8 @@ export interface AppState {
   settingsOpen: boolean;
   /** Currently ringing in-app alert (web only; native uses OS notifications). */
   ringing: RingingAlert | null;
+  /** Whether the first-run onboarding has been dismissed. */
+  hasCompletedOnboarding: boolean;
 }
 
 export const initialState: AppState = {
@@ -70,6 +75,7 @@ export const initialState: AppState = {
   elevenLabsKey: "",
   settingsOpen: false,
   ringing: null,
+  hasCompletedOnboarding: false,
 };
 
 export const SUB_TAB_ORDER: ClockSubTab[] = [
@@ -101,13 +107,14 @@ function loadState(): Partial<AppState> {
     if (Array.isArray(parsed.reminders)) clean.reminders = parsed.reminders;
     if (Array.isArray(parsed.pomodoroSessions)) clean.pomodoroSessions = parsed.pomodoroSessions;
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
+    if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
     return clean;
   } catch {
     return {};
   }
 }
 
-function mergeWithDefault(loaded: Partial<AppState>): AppState {
+export function mergeWithDefault(loaded: Partial<AppState>): AppState {
   return {
     ...initialState,
     ...loaded,
