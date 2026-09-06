@@ -6,7 +6,10 @@ export type ClockSubTab =
   | "stopwatch"
   | "timer"
   | "pomodoro"
-  | "reminder";
+  | "reminder"
+  | "stats"
+  | "ambient"
+  | "breathing";
 
 export interface Alarm {
   id: string;

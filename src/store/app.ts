@@ -90,6 +90,9 @@ export const SUB_TAB_ORDER: ClockSubTab[] = [
   "timer",
   "pomodoro",
   "reminder",
+  "stats",
+  "ambient",
+  "breathing",
 ];
 
 const validSubTabs: ClockSubTab[] = SUB_TAB_ORDER;

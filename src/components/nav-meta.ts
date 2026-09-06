@@ -7,6 +7,9 @@ export const subTabMeta: Record<ClockSubTab, { label: string; icon: string }> = 
   timer: { label: "Timer", icon: "i-mdi-timer-sand" },
   pomodoro: { label: "Pomodoro", icon: "i-mdi-brain" },
   reminder: { label: "Reminder", icon: "i-mdi-bell-outline" },
+  stats: { label: "Stats", icon: "i-mdi-chart-bar" },
+  ambient: { label: "Ambient", icon: "i-mdi-weather-rainy" },
+  breathing: { label: "Breathe", icon: "i-mdi-weather-windy" },
 };
 
 export const subTabTitles: Record<string, string> = Object.fromEntries(

@@ -20,7 +20,7 @@ export function Header() {
         </div>
 
         {/* Top navigation — tablet and desktop only (mobile uses the bottom TabBar) */}
-        <nav class="hidden items-center gap-0.5 rounded-full bg-surface-2 p-1 md:flex" aria-label="Clock features">
+        <nav class="hidden max-w-[60%] items-center gap-0.5 overflow-x-auto rounded-full bg-surface-2 p-1 md:flex" aria-label="Clock features">
           <For each={SUB_TAB_ORDER}>
             {(id) => {
               const meta = subTabMeta[id];
