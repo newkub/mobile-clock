@@ -6,7 +6,7 @@ import { subTabMeta } from "./nav-meta";
 export function TabBar() {
   return (
     <nav
-      class="glass mx-3 mb-2 flex max-w-full justify-between gap-1 overflow-x-auto rounded-3xl p-1.5 pb-safe md:hidden"
+      class="glass mx-3 mb-2 flex max-w-full gap-1 overflow-x-auto rounded-3xl p-1.5 pb-safe md:hidden"
       aria-label="Clock features"
     >
       <For each={SUB_TAB_ORDER}>

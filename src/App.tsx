@@ -15,6 +15,9 @@ import { StopwatchTab } from "./tabs/clock-sub/Stopwatch";
 import { TimerTab } from "./tabs/clock-sub/Timer";
 import { PomodoroTab } from "./tabs/clock-sub/Pomodoro";
 import { ReminderTab } from "./tabs/clock-sub/Reminder";
+import { StatsTab } from "./tabs/clock-sub/Stats";
+import { AmbientTab } from "./tabs/clock-sub/Ambient";
+import { BreathingTab } from "./tabs/clock-sub/Breathing";
 
 export default function App() {
   // Apply theme to <html> whenever the setting or OS preference changes.
@@ -113,6 +116,9 @@ export default function App() {
           <Match when={appStore.clockSubTab === "timer"}><TimerTab /></Match>
           <Match when={appStore.clockSubTab === "pomodoro"}><PomodoroTab /></Match>
           <Match when={appStore.clockSubTab === "reminder"}><ReminderTab /></Match>
+          <Match when={appStore.clockSubTab === "stats"}><StatsTab /></Match>
+          <Match when={appStore.clockSubTab === "ambient"}><AmbientTab /></Match>
+          <Match when={appStore.clockSubTab === "breathing"}><BreathingTab /></Match>
         </Switch>
         </div>
       </main>

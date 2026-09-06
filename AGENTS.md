@@ -15,7 +15,7 @@ Ship `mobile-clock` ให้ทำงานบน Android (Capacitor 8) แล�
 - Notifications: Capacitor Local Notifications (native) + web alarm watcher + in-app ringing overlay + service worker
 - AI sound: ElevenLabs API (TTS) ผ่าน settings
 - Deploy: Cloudflare Workers static assets + Wrangler (SPA `not_found_handling`)
-- Git: local `main` with feature branches; remote `mobile-clock` → `https://github.com/newkub/wrikka-mobile.git` (repo ชื่อ `wrikka-mobile` บน GitHub)
+- Git: local `main` with feature branches; remote `mobile-clock` → `https://github.com/newkub/mobile-clock.git`
 - Review: /review-codebase
 
 ## Execute
@@ -69,7 +69,7 @@ bun run deploy
 - `src/types.ts` — `Alarm`, `Reminder`, `TimerPreset`, `PomodoroSession`, `WorldClock`, tab types
 - `src/components/` — Button, Input, Switch, Modal (focus trap), TimePicker, CircleProgress, EmptyState, StatusToast, Header (+ top nav), TabBar, AnalogClock, AlarmRingOverlay, OnboardingOverlay, SettingsDataSection, AddWorldClockModal, `nav-meta.ts`
 - `src/hooks/` — `use-interval`, `use-media-query`, `use-shortcuts`
-- `src/tabs/clock-sub/` — Clock, Alarm, Stopwatch, Timer, Pomodoro, Reminder (+ `alarm/`, `reminder/` subdirs)
+- `src/tabs/clock-sub/` — Clock, Alarm, Stopwatch, Timer, Pomodoro, Reminder, Stats, Ambient, Breathing (+ `alarm/`, `reminder/` subdirs)
 - `src/lib/` — capacitor, status, audio, elevenlabs, notifications, time, hash, theme, pwa
 - `worker/index.ts` — Cloudflare Worker entry (static assets only)
 - `wrangler.jsonc` — Workers + static assets config
@@ -84,6 +84,9 @@ bun run deploy
 - Search & filter ใน Alarm และ Reminder
 - Sound themes (beep, chime, digital, soft) สำหรับ timer/alarm/pomodoro
 - Theme auto/dark/light + reduced-motion support + offline indicator
+- Stats tab with GitHub-like activity heatmap (Pomodoro focus data)
+- Ambient sounds tab (brown/pink/rain/cafe noise) with volume and sleep timer
+- Breathing exercises tab (Box and 4-7-8 patterns)
 
 ## Expected Outcome
 

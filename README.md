@@ -20,6 +20,9 @@ A local-first clock app for Android and PWA — built with SolidJS, Vite, UnoCSS
 | Data Backup | Export / import local data as JSON |
 | PWA Install | Add-to-home-screen prompt when the browser supports it |
 | Responsive | Bottom tab bar on mobile, top navigation on tablet/desktop |
+| Stats | GitHub-like activity heatmap for Pomodoro focus time |
+| Ambient Sounds | Brown/pink/rain/cafe noise with volume and sleep timer |
+| Breathing | Box and 4-7-8 breathing exercises with visual guide |
 
 ## Stack
 
