@@ -1,28 +1,22 @@
+import { eq } from "drizzle-orm";
+import { drizzle } from "drizzle-orm/d1";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { z } from "zod";
+import { createTaskSchema, tasks, updateTaskSchema } from "./db/schema";
 
 export interface Env {
   DB: D1Database;
-  ASSETS?: { fetch: (request: Request) => Promise<Response> };
+  ASSETS: { fetch: (request: Request) => Promise<Response> };
 }
 
-interface Task {
-  id: string;
-  title: string;
-  completed: boolean;
-  completed_at: number | null;
-  total_focus_seconds: number;
-  completed_pomodoros: number;
-  sort_order: number;
-  created_at: number;
-  updated_at: number;
-}
+const idParam = z.object({ id: z.string().min(1) });
 
 function now() {
   return Math.floor(Date.now() / 1000);
 }
 
-function id() {
+function generateId() {
   return `${now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
@@ -37,105 +31,77 @@ app.use("/api/*", cors({
 app.get("/api/health", (c) => c.json({ ok: true }));
 
 app.get("/api/tasks", async (c) => {
-  const { results } = await c.env.DB.prepare(
-    "SELECT * FROM tasks ORDER BY sort_order ASC, created_at DESC"
-  ).all<Task>();
-  return c.json(results ?? []);
+  const db = drizzle(c.env.DB);
+  const rows = await db.select().from(tasks).orderBy(tasks.sortOrder, tasks.createdAt);
+  return c.json(rows);
 });
 
 app.post("/api/tasks", async (c) => {
-  const body = await c.req.json<{ title?: string }>();
-  const title = (body.title ?? "").trim();
-  if (!title) return c.json({ error: "title is required" }, 400);
+  const body = await c.req.json();
+  const parsed = createTaskSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.flatten() }, 400);
+  }
 
-  const task: Task = {
-    id: id(),
-    title,
+  const task = {
+    id: generateId(),
+    title: parsed.data.title,
     completed: false,
-    completed_at: null,
-    total_focus_seconds: 0,
-    completed_pomodoros: 0,
-    sort_order: 0,
-    created_at: now(),
-    updated_at: now(),
+    completedAt: null as number | null,
+    totalFocusSeconds: 0,
+    completedPomodoros: 0,
+    sortOrder: parsed.data.sortOrder ?? 0,
+    createdAt: now(),
+    updatedAt: now(),
   };
 
-  await c.env.DB.prepare(
-    `INSERT INTO tasks
-     (id, title, completed, completed_at, total_focus_seconds, completed_pomodoros, sort_order, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
-  ).bind(
-    task.id,
-    task.title,
-    task.completed ? 1 : 0,
-    task.completed_at,
-    task.total_focus_seconds,
-    task.completed_pomodoros,
-    task.sort_order,
-    task.created_at,
-    task.updated_at
-  ).run();
-
+  const db = drizzle(c.env.DB);
+  await db.insert(tasks).values(task);
   return c.json(task, 201);
 });
 
 app.put("/api/tasks/:id", async (c) => {
-  const taskId = c.req.param("id");
-  const body = await c.req.json<Partial<Task>>();
-  const title = (body.title ?? "").trim();
+  const params = idParam.safeParse({ id: c.req.param("id") });
+  if (!params.success) return c.json({ error: "invalid id" }, 400);
 
-  const existing = await c.env.DB.prepare("SELECT * FROM tasks WHERE id = ?").bind(taskId).first<Task>();
+  const body = await c.req.json();
+  const parsed = updateTaskSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: parsed.error.flatten() }, 400);
+  }
+
+  const db = drizzle(c.env.DB);
+  const rows = await db.select().from(tasks).where(eq(tasks.id, params.data.id)).limit(1);
+  const existing = rows[0];
   if (!existing) return c.json({ error: "not found" }, 404);
 
-  const completed = body.completed !== undefined ? body.completed : existing.completed;
-  const completedAt = completed ? (existing.completed_at ?? now()) : null;
-  const updated: Task = {
+  const completed = parsed.data.completed !== undefined ? parsed.data.completed : existing.completed;
+  const completedAt = completed ? (existing.completedAt ?? now()) : null;
+
+  const updated = {
     ...existing,
-    title: title || existing.title,
+    title: parsed.data.title ?? existing.title,
     completed,
-    completed_at: completedAt,
-    total_focus_seconds: body.total_focus_seconds ?? existing.total_focus_seconds,
-    completed_pomodoros: body.completed_pomodoros ?? existing.completed_pomodoros,
-    sort_order: body.sort_order ?? existing.sort_order,
-    updated_at: now(),
+    completedAt,
+    totalFocusSeconds: parsed.data.totalFocusSeconds ?? existing.totalFocusSeconds,
+    completedPomodoros: parsed.data.completedPomodoros ?? existing.completedPomodoros,
+    sortOrder: parsed.data.sortOrder ?? existing.sortOrder,
+    updatedAt: now(),
   };
 
-  await c.env.DB.prepare(
-    `UPDATE tasks SET
-      title = ?,
-      completed = ?,
-      completed_at = ?,
-      total_focus_seconds = ?,
-      completed_pomodoros = ?,
-      sort_order = ?,
-      updated_at = ?
-     WHERE id = ?`
-  ).bind(
-    updated.title,
-    updated.completed ? 1 : 0,
-    updated.completed_at,
-    updated.total_focus_seconds,
-    updated.completed_pomodoros,
-    updated.sort_order,
-    updated.updated_at,
-    taskId
-  ).run();
-
+  await db.update(tasks).set(updated).where(eq(tasks.id, params.data.id));
   return c.json(updated);
 });
 
 app.delete("/api/tasks/:id", async (c) => {
-  const taskId = c.req.param("id");
-  await c.env.DB.prepare("DELETE FROM tasks WHERE id = ?").bind(taskId).run();
+  const params = idParam.safeParse({ id: c.req.param("id") });
+  if (!params.success) return c.json({ error: "invalid id" }, 400);
+
+  const db = drizzle(c.env.DB);
+  await db.delete(tasks).where(eq(tasks.id, params.data.id));
   return c.json({ ok: true });
 });
 
-// Serve the SPA for all non-API routes.
-app.all("*", async (c) => {
-  if (c.env.ASSETS) {
-    return c.env.ASSETS.fetch(c.req.raw);
-  }
-  return c.text("Not found", 404);
-});
+app.all("*", async (c) => c.env.ASSETS.fetch(c.req.raw));
 
 export default app;

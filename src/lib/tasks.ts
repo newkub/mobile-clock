@@ -7,13 +7,13 @@ function fromServer(t: Record<string, unknown>): FocusTask {
   return {
     id: String(t.id),
     title: String(t.title),
-    completed: Boolean(t.completed),
-    completedAt: typeof t.completed_at === "number" ? t.completed_at : null,
-    totalFocusSeconds: Number(t.total_focus_seconds ?? 0),
-    completedPomodoros: Number(t.completed_pomodoros ?? 0),
-    sortOrder: Number(t.sort_order ?? 0),
-    createdAt: Number(t.created_at),
-    updatedAt: Number(t.updated_at),
+    completed: Boolean(t.completed ?? t["completed"]),
+    completedAt: typeof (t.completedAt ?? t.completed_at) === "number" ? (t.completedAt ?? t.completed_at) as number : null,
+    totalFocusSeconds: Number(t.totalFocusSeconds ?? t.total_focus_seconds ?? 0),
+    completedPomodoros: Number(t.completedPomodoros ?? t.completed_pomodoros ?? 0),
+    sortOrder: Number(t.sortOrder ?? t.sort_order ?? 0),
+    createdAt: Number(t.createdAt ?? t.created_at),
+    updatedAt: Number(t.updatedAt ?? t.updated_at),
   };
 }
 
@@ -22,7 +22,7 @@ function toServer(task: FocusTask) {
     id: task.id,
     title: task.title,
     completed: task.completed,
-    completed_at: task.completedAt,
+    completedAt: task.completedAt,
     total_focus_seconds: task.totalFocusSeconds,
     completed_pomodoros: task.completedPomodoros,
     sort_order: task.sortOrder,
@@ -66,7 +66,7 @@ export async function createTask(title: string): Promise<FocusTask | null> {
     const res = await fetch(API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: task.title }),
+      body: JSON.stringify({ title: task.title, sortOrder: task.sortOrder }),
     });
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const saved = fromServer((await res.json()) as Record<string, unknown>);
