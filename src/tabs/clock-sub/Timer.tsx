@@ -1,5 +1,6 @@
 import { createSignal, createEffect, createRoot, onCleanup, For, Show } from "solid-js";
 import { CircleProgress } from "../../components/CircleProgress";
+import { FullscreenButton } from "../../components/FullscreenButton";
 import { Button } from "../../components/Button";
 import { Input } from "../../components/Input";
 import { EmptyState } from "../../components/EmptyState";
@@ -114,6 +115,12 @@ export function TimerTab() {
     haptic("light");
   }
 
+  function repeat() {
+    setRemaining(seconds());
+    runTimer();
+    haptic("success");
+  }
+
   function selectPreset(p: TimerPreset) {
     setSeconds(p.seconds);
     setRemaining(p.seconds);
@@ -154,7 +161,8 @@ export function TimerTab() {
   });
 
   return (
-    <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
+    <div class="tab-content relative h-full overflow-y-auto p-5 pb-28 md:pb-8">
+      <FullscreenButton class="absolute right-4 top-4 md:right-6 md:top-6" />
       <div class="mx-auto flex max-w-4xl flex-col items-center gap-5 md:grid md:grid-cols-2 md:items-start md:gap-10">
         {/* Left column: dial + controls */}
         <div class="flex w-full flex-col items-center gap-5">
@@ -183,13 +191,15 @@ export function TimerTab() {
 
       <div class="flex w-full max-w-sm gap-3">
         <Button
-          onClick={running() ? pause : start}
+          onClick={running() ? pause : remaining() === 0 && seconds() > 0 ? repeat : start}
           class="h-16 flex-1 rounded-3xl text-xl"
           variant={running() ? "secondary" : "primary"}
-          aria-label={running() ? "Pause timer" : "Start timer"}
+          aria-label={running() ? "Pause timer" : remaining() === 0 && seconds() > 0 ? "Repeat timer" : "Start timer"}
         >
           {running() ? (
             <><span class="i-mdi-pause mr-2 h-5 w-5" /> Pause</>
+          ) : remaining() === 0 && seconds() > 0 ? (
+            <><span class="i-mdi-replay mr-2 h-5 w-5" /> Repeat</>
           ) : (
             <><span class="i-mdi-play mr-2 h-5 w-5" /> Start</>
           )}
