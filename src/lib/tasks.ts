@@ -1,42 +1,16 @@
 import type { FocusTask } from "../types";
 import { appStore, setStore, queuePersist } from "../store/app";
+import { createORPCClient } from "@orpc/client";
+import { RPCLink } from "@orpc/client/fetch";
+import type { RouterClient } from "@orpc/server";
+import type { AppRouter } from "../orpc";
 
-const API = "/api/tasks";
-
-function fromServer(t: Record<string, unknown>): FocusTask {
-  return {
-    id: String(t.id),
-    title: String(t.title),
-    completed: Boolean(t.completed ?? t["completed"]),
-    completedAt: typeof (t.completedAt ?? t.completed_at) === "number" ? (t.completedAt ?? t.completed_at) as number : null,
-    totalFocusSeconds: Number(t.totalFocusSeconds ?? t.total_focus_seconds ?? 0),
-    completedPomodoros: Number(t.completedPomodoros ?? t.completed_pomodoros ?? 0),
-    sortOrder: Number(t.sortOrder ?? t.sort_order ?? 0),
-    createdAt: Number(t.createdAt ?? t.created_at),
-    updatedAt: Number(t.updatedAt ?? t.updated_at),
-  };
-}
-
-function toServer(task: FocusTask) {
-  return {
-    id: task.id,
-    title: task.title,
-    completed: task.completed,
-    completedAt: task.completedAt,
-    total_focus_seconds: task.totalFocusSeconds,
-    completed_pomodoros: task.completedPomodoros,
-    sort_order: task.sortOrder,
-    created_at: task.createdAt,
-    updated_at: task.updatedAt,
-  };
-}
+const link = new RPCLink({ url: "/rpc" });
+const orpc = createORPCClient<RouterClient<AppRouter>>(link);
 
 export async function loadTasks(): Promise<FocusTask[]> {
   try {
-    const res = await fetch(API);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const raw = (await res.json()) as Record<string, unknown>[];
-    const tasks = raw.map(fromServer).sort((a, b) => a.sortOrder - b.sortOrder || b.createdAt - a.createdAt);
+    const tasks = await orpc.tasks.list();
     setStore("focusTasks", tasks);
     queuePersist();
     return tasks;
@@ -63,13 +37,7 @@ export async function createTask(title: string): Promise<FocusTask | null> {
   queuePersist();
 
   try {
-    const res = await fetch(API, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title: task.title, sortOrder: task.sortOrder }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const saved = fromServer((await res.json()) as Record<string, unknown>);
+    const saved = await orpc.tasks.create({ title: task.title, sortOrder: task.sortOrder });
     setStore("focusTasks", (prev) => prev.map((t) => (t.id === task.id ? saved : t)));
     queuePersist();
     return saved;
@@ -100,13 +68,15 @@ export async function updateTask(id: string, patch: Partial<FocusTask>): Promise
   queuePersist();
 
   try {
-    const res = await fetch(`${API}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toServer(updated)),
+    const saved = await orpc.tasks.update({
+      id,
+      title: updated.title,
+      completed: updated.completed,
+      completedAt: updated.completedAt,
+      totalFocusSeconds: updated.totalFocusSeconds,
+      completedPomodoros: updated.completedPomodoros,
+      sortOrder: updated.sortOrder,
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const saved = fromServer((await res.json()) as Record<string, unknown>);
     setStore("focusTasks", (prev) => prev.map((t) => (t.id === id ? saved : t)));
     queuePersist();
     return saved;
@@ -119,8 +89,7 @@ export async function deleteTask(id: string): Promise<void> {
   setStore("focusTasks", (prev) => prev.filter((t) => t.id !== id));
   queuePersist();
   try {
-    const res = await fetch(`${API}/${id}`, { method: "DELETE" });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    await orpc.tasks.delete({ id });
   } catch {
     // already removed from local store
   }
