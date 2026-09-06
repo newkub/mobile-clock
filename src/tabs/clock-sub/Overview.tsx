@@ -1,23 +1,31 @@
-import { For, Show, createMemo } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { appStore, setClockSubTab } from "../../store/app";
 import { haptic } from "../../lib/capacitor";
 import { computeHabitStreak, isHabitCompletedOn } from "../../lib/habits";
 
 export function OverviewTab() {
-  const now = new Date();
-  const hour = now.getHours();
-  const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const [now, setNow] = createSignal(new Date());
 
-  const dateLabel = now.toLocaleDateString(undefined, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
+  onMount(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    onCleanup(() => clearInterval(t));
   });
 
+  const hour = () => now().getHours();
+  const greeting = () => (hour() < 12 ? "Good morning" : hour() < 18 ? "Good afternoon" : "Good evening");
+
+  const dateLabel = () =>
+    now().toLocaleDateString(undefined, {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+    });
+
   const timeString = () =>
-    now.toLocaleTimeString(undefined, {
+    now().toLocaleTimeString(undefined, {
       hour: "2-digit",
       minute: "2-digit",
+      second: "2-digit",
       hour12: appStore.globalSettings.timeFormat === "12h",
     });
 
@@ -56,8 +64,8 @@ export function OverviewTab() {
     <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
       <div class="mx-auto max-w-4xl space-y-6">
         <div class="space-y-1">
-          <h2 class="text-3xl font-bold text-text md:text-4xl">{greeting}</h2>
-          <p class="text-text-secondary">{dateLabel}</p>
+          <h2 class="text-3xl font-bold text-text md:text-4xl">{greeting()}</h2>
+          <p class="text-text-secondary">{dateLabel()}</p>
         </div>
 
         <div class="glass rounded-3xl p-6 text-center">

@@ -41,9 +41,12 @@ function buildWeeks(): string[][] {
   return weeks;
 }
 
+const PALETTE = ["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#06b6d4", "#ec4899", "#84cc16"];
+
 export function HabitsTab() {
   const [loading, setLoading] = createSignal(true);
   const [draft, setDraft] = createSignal("");
+  const [color, setColor] = createSignal(PALETTE[0]);
 
   createEffect(() => {
     loadHabits().finally(() => setLoading(false));
@@ -68,7 +71,7 @@ export function HabitsTab() {
     if (!title) return;
     setDraft("");
     haptic("medium");
-    const habit = await createHabit(title);
+    const habit = await createHabit(title, { color: color() });
     showStatus(habit ? "Habit added" : "Saved locally", habit ? "success" : "info");
   }
 
@@ -100,7 +103,7 @@ export function HabitsTab() {
         </h2>
 
         <Show when={!loading()} fallback={<p class="text-center text-sm text-text-secondary">Loading habits…</p>}>
-          <div class="rounded-2xl bg-surface-2 p-4">
+          <div class="space-y-3 rounded-2xl bg-surface-2 p-4">
             <div class="flex gap-2">
               <input
                 type="text"
@@ -114,6 +117,21 @@ export function HabitsTab() {
               <Button onClick={add} variant="primary" class="h-12 w-12 shrink-0 rounded-xl p-0" aria-label="Add habit">
                 <span class="i-mdi-plus h-5 w-5" />
               </Button>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="text-xs text-text-secondary">Color</span>
+              <For each={PALETTE}>
+                {(c) => (
+                  <button
+                    onClick={() => { setColor(c); haptic("light"); }}
+                    class={`h-6 w-6 rounded-full transition active:scale-90 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                      color() === c ? "ring-2 ring-text ring-offset-2 ring-offset-surface-2" : ""
+                    }`}
+                    style={{ background: c }}
+                    aria-label={`Pick color ${c}`}
+                  />
+                )}
+              </For>
             </div>
           </div>
 

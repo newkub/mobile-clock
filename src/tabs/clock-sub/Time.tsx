@@ -1,4 +1,4 @@
-import { For, Show, createMemo, createSignal } from "solid-js";
+import { For, Show, createMemo, createSignal, onCleanup, onMount } from "solid-js";
 import { Button } from "../../components/Button";
 import { EmptyState } from "../../components/EmptyState";
 import { haptic } from "../../lib/capacitor";
@@ -17,6 +17,12 @@ function formatDuration(ms: number) {
 export function TimeTab() {
   const [project, setProject] = createSignal("");
   const [exporting, setExporting] = createSignal(false);
+  const [tickNow, setTickNow] = createSignal(Date.now());
+
+  onMount(() => {
+    const t = setInterval(() => setTickNow(Date.now()), 1000);
+    onCleanup(() => clearInterval(t));
+  });
 
   const activeEntry = createMemo(() => appStore.timeEntries.find((e) => e.end === null));
   const entries = createMemo(() => appStore.timeEntries.filter((e) => e.end !== null).sort((a, b) => b.start - a.start));
@@ -68,6 +74,24 @@ export function TimeTab() {
     return [...map.entries()].sort((a, b) => b[1] - a[1]);
   });
 
+  const startOfToday = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    return d.getTime();
+  };
+  const startOfWeek = () => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // Monday
+    return d.getTime();
+  };
+  const sumSince = (since: number) =>
+    appStore.timeEntries
+      .filter((e) => e.start >= since)
+      .reduce((s, e) => s + ((e.end ?? tickNow()) - e.start), 0);
+  const todayTotal = createMemo(() => sumSince(startOfToday()));
+  const weekTotal = createMemo(() => sumSince(startOfWeek()));
+
   return (
     <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
       <div class="mx-auto max-w-4xl space-y-5">
@@ -100,10 +124,21 @@ export function TimeTab() {
           </div>
           <Show when={activeEntry()}>
             <p class="mt-3 text-center text-3xl font-bold tabular-nums text-text">
-              {formatDuration(Date.now() - activeEntry()!.start)}
+              {formatDuration(tickNow() - activeEntry()!.start)}
             </p>
             <p class="text-center text-sm text-text-secondary">{activeEntry()!.project}</p>
           </Show>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div class="rounded-2xl bg-surface-2 p-4 text-center">
+            <p class="text-2xl font-bold tabular-nums text-primary">{formatDuration(todayTotal())}</p>
+            <p class="text-xs text-text-secondary">Today</p>
+          </div>
+          <div class="rounded-2xl bg-surface-2 p-4 text-center">
+            <p class="text-2xl font-bold tabular-nums text-accent">{formatDuration(weekTotal())}</p>
+            <p class="text-xs text-text-secondary">This week</p>
+          </div>
         </div>
 
         <Show when={groupedByProject().length > 0}>

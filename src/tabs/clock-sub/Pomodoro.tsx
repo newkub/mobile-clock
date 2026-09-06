@@ -208,6 +208,22 @@ export function PomodoroTab() {
               {format(remaining())}
             </p>
             <p class="mt-1 text-sm text-text-secondary">{phaseLabel[phase()]} time</p>
+            {/* Round dots: fills up across the 4-focus cycle before a long break. */}
+            <div class="mt-2 flex items-center justify-center gap-1.5" aria-label={`Round ${(completedInSession() % 4) + (phase() === "focus" ? 1 : 0)} of 4`}>
+              <For each={[0, 1, 2, 3]}>
+                {(i) => (
+                  <span
+                    class={`h-2 w-2 rounded-full transition ${
+                      i < completedInSession() % 4 || (phase() === "long" && completedInSession() % 4 === 0 && completedInSession() > 0)
+                        ? "bg-primary"
+                        : i === completedInSession() % 4 && phase() === "focus"
+                          ? "bg-primary/40"
+                          : "bg-surface-3"
+                    }`}
+                  />
+                )}
+              </For>
+            </div>
           </div>
         </CircleProgress>
       </div>
