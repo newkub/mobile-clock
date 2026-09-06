@@ -26,7 +26,7 @@ export function StatusToast() {
           aria-atomic="true"
         >
           <div
-            class={`glass flex items-center gap-3 rounded-2xl px-4 py-3 shadow-lg ${
+            class={`animate-toast-in glass flex items-center gap-3 rounded-2xl px-4 py-3 shadow-lg ${
               colorClass[status().type]
             }`}
           >

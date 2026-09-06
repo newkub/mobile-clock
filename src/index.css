@@ -51,6 +51,50 @@ body {
   display: none;
 }
 
+/* Subtle page-level fade-in when the Switch swaps tab content. */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-fade > * {
+  animation: fade-in 200ms ease-out;
+}
+
+/* StatusToast entrance: gentle slide up + fade. */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animate-toast-in {
+  animation: toast-in 220ms cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+/* EmptyState icon: gentle floating pulse. */
+@keyframes empty-float {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.04);
+  }
+}
+.animate-empty-float {
+  animation: empty-float 3s ease-in-out infinite;
+}
+
 .pt-safe {
   padding-top: env(safe-area-inset-top);
 }

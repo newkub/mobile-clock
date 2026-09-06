@@ -3,41 +3,12 @@ import { FullscreenButton } from "../../components/FullscreenButton";
 import { Button } from "../../components/Button";
 import { useShortcuts } from "../../hooks/use-shortcuts";
 import { haptic } from "../../lib/capacitor";
+import { showStatus } from "../../lib/status";
+import { formatDuration } from "../../lib/time";
 import { appStore } from "../../store/app";
+import { PATTERNS, PHASE_META } from "../../lib/breathing";
 
-type PhaseKind = "inhale" | "hold" | "exhale";
 type HapticType = Parameters<typeof haptic>[0];
-
-interface BreathPhase { kind: PhaseKind; label: string; seconds: number }
-interface BreathPattern { id: string; name: string; tagline: string; icon: string; phases: BreathPhase[] }
-
-const PATTERNS: BreathPattern[] = [
-  {
-    id: "box", name: "Box", tagline: "4-4-4-4 · steady calm & focus", icon: "i-mdi-cube-outline",
-    phases: [
-      { kind: "inhale", label: "Inhale", seconds: 4 },
-      { kind: "hold", label: "Hold", seconds: 4 },
-      { kind: "exhale", label: "Exhale", seconds: 4 },
-      { kind: "hold", label: "Hold", seconds: 4 },
-    ],
-  },
-  {
-    id: "478", name: "4-7-8", tagline: "4-7-8 · unwind & drift to sleep", icon: "i-mdi-sleep",
-    phases: [
-      { kind: "inhale", label: "Inhale", seconds: 4 },
-      { kind: "hold", label: "Hold", seconds: 7 },
-      { kind: "exhale", label: "Exhale", seconds: 8 },
-    ],
-  },
-];
-
-// Per-phase visuals: theme-aware color (full + soft alpha), icon and target
-// circle scale. Hold keeps whatever scale the previous phase reached.
-const PHASE_META: Record<PhaseKind, { icon: string; color: string; soft: string; scale: number | null }> = {
-  inhale: { icon: "i-mdi-arrow-up-bold", color: "hsl(var(--color-primary))", soft: "hsl(var(--color-primary) / 0.22)", scale: 1.3 },
-  hold: { icon: "i-mdi-pause", color: "hsl(var(--color-accent))", soft: "hsl(var(--color-accent) / 0.22)", scale: null },
-  exhale: { icon: "i-mdi-arrow-down-bold", color: "hsl(var(--color-success))", soft: "hsl(var(--color-success) / 0.22)", scale: 0.8 },
-};
 
 // Module-scoped state: survives sub-tab switches like Timer/Pomodoro.
 const [patternId, setPatternId] = createSignal(PATTERNS[0].id);
@@ -48,6 +19,7 @@ const [cycles, setCycles] = createSignal(0);
 const [scale, setScale] = createSignal(1);
 const [animMs, setAnimMs] = createSignal(600);
 const [reducedMotion, setReducedMotion] = createSignal(false);
+const [elapsed, setElapsed] = createSignal(0);
 
 // Respect the OS reduced-motion preference (the global .reduce-motion class
 // also collapses CSS transitions, but we skip scale changes entirely here).
@@ -83,6 +55,7 @@ createRoot(() => {
   createEffect(() => {
     if (!running()) return;
     const id = setInterval(() => {
+      setElapsed((e) => e + 1);
       const left = secondsLeft() - 1;
       if (left > 0) {
         setSecondsLeft(left);
@@ -107,6 +80,7 @@ export function BreathingTab() {
 
   function start() {
     setCycles(0);
+    setElapsed(0);
     setScale(1);
     enterPhase(0);
     setRunning(true);
@@ -114,6 +88,12 @@ export function BreathingTab() {
   }
 
   function stop() {
+    if (running() && elapsed() > 2) {
+      showStatus(
+        `Breathed ${formatDuration(elapsed())} · ${cycles()} cycle${cycles() === 1 ? "" : "s"} done`,
+        "success"
+      );
+    }
     reset();
     buzz("light");
   }
@@ -148,12 +128,12 @@ export function BreathingTab() {
         </div>
 
         {/* Pattern selector */}
-        <div class="flex rounded-full bg-surface-2 p-1">
+        <div class="flex flex-wrap justify-center gap-1 rounded-2xl bg-surface-2 p-1.5">
           <For each={PATTERNS}>
             {(p) => (
               <button
                 onClick={() => select(p.id)}
-                class={`flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                class={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
                   patternId() === p.id ? "bg-primary text-white" : "text-text-secondary"
                 }`}
                 aria-label={`Select ${p.name} breathing pattern`}
@@ -176,7 +156,15 @@ export function BreathingTab() {
               "box-shadow": `0 0 44px ${meta().soft}`,
               "transition-property": "transform, background-color, border-color, box-shadow",
               "transition-duration": `${animMs()}ms, 700ms, 700ms, 700ms`,
-              "transition-timing-function": "ease-in-out",
+              "transition-timing-function": "cubic-bezier(0.4, 0, 0.2, 1)",
+            }}
+          />
+          <div
+            class="absolute inset-16 rounded-full border-2 opacity-40"
+            style={{
+              "border-color": meta().color,
+              transform: `scale(${Math.max(0.6, Math.min(1.15, 0.85 + (scale() - 1) * 0.2))})`,
+              transition: `transform ${animMs()}ms cubic-bezier(0.4, 0, 0.2, 1)`,
             }}
           />
           <div class="absolute inset-0 flex flex-col items-center justify-center gap-1 text-center">
@@ -228,7 +216,7 @@ export function BreathingTab() {
 
         <p class="text-xs text-text-secondary">
           <Show when={running()} fallback={cycles() > 0 ? `${cycles()} cycle${cycles() === 1 ? "" : "s"} completed` : "Breathe with the circle"}>
-            Cycle {cycles() + 1}
+            Cycle {cycles() + 1} · {formatDuration(elapsed())}
           </Show>
         </p>
 
