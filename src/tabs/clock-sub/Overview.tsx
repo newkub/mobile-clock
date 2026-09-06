@@ -29,6 +29,11 @@ export function OverviewTab() {
       hour12: appStore.globalSettings.timeFormat === "12h",
     });
 
+  const dayProgress = () =>
+    Math.round(
+      ((now().getHours() * 3600 + now().getMinutes() * 60 + now().getSeconds()) / 86400) * 100,
+    );
+
   const today = createMemo(() => new Date().toISOString().slice(0, 10));
   const habitsToday = createMemo(() =>
     appStore.habits.filter((h) => isHabitCompletedOn(h, today())),
@@ -70,6 +75,16 @@ export function OverviewTab() {
 
         <div class="glass rounded-3xl p-6 text-center">
           <p class="text-5xl font-bold tabular-nums text-text md:text-7xl">{timeString()}</p>
+          {/* Day progress: how much of today has elapsed */}
+          <div class="mt-4">
+            <div class="h-1.5 overflow-hidden rounded-full bg-surface-3" role="progressbar" aria-valuenow={dayProgress()} aria-valuemin={0} aria-valuemax={100} aria-label="Day progress">
+              <div
+                class="h-full rounded-full bg-primary transition-[width] duration-1000"
+                style={{ width: `${dayProgress()}%` }}
+              />
+            </div>
+            <p class="mt-1.5 text-xs text-text-secondary">{dayProgress()}% of the day</p>
+          </div>
         </div>
 
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">

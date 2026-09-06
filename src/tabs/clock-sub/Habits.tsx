@@ -162,6 +162,19 @@ export function HabitsTab() {
                           </p>
                         </div>
                         <button
+                          onClick={() => toggle(habit.id, todayStr())}
+                          class={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-xs font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                            isHabitCompletedOn(habit, todayStr())
+                              ? "bg-success/20 text-success"
+                              : "bg-surface-3 text-text-secondary hover:text-text"
+                          }`}
+                          aria-label={`Mark ${habit.title} as done today`}
+                          aria-pressed={!!isHabitCompletedOn(habit, todayStr())}
+                        >
+                          <span class={`${isHabitCompletedOn(habit, todayStr()) ? "i-mdi-check-circle" : "i-mdi-check-circle-outline"} h-4 w-4`} />
+                          Today
+                        </button>
+                        <button
                           onClick={() => remove(habit.id)}
                           class="shrink-0 rounded-lg p-2 text-text-secondary transition hover:bg-danger/10 hover:text-danger"
                           aria-label={`Delete ${habit.title}`}

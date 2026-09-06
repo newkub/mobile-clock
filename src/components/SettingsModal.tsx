@@ -1,9 +1,10 @@
 import { createSignal, For, Show } from "solid-js";
-import { appStore, setGlobalSetting, setElevenLabsKey, setTabOrder, initialState } from "../store/app";
+import { appStore, setGlobalSetting, setElevenLabsKey, setTabOrder, toggleTabHidden, initialState } from "../store/app";
 import { subTabMeta } from "./nav-meta";
 import { showStatus } from "../lib/status";
 import { haptic } from "../lib/capacitor";
 import { syncTheme } from "../lib/theme";
+import { syncing, lastSyncedAt, syncFailed, syncNow } from "../lib/sync";
 import { requestNotificationPermission } from "../lib/notifications";
 import { playFinishAlert } from "../lib/audio";
 import { Button } from "./Button";
@@ -111,7 +112,21 @@ export function SettingsModal(props: { onClose: () => void }) {
 										class="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent"
 										aria-label="Accent color"
 									/>
-									<p class="text-xs text-text-secondary">{appStore.globalSettings.accentColor}</p>
+									<div class="flex flex-wrap gap-1.5">
+										<For each={["#6366f1", "#22c55e", "#f59e0b", "#ef4444", "#a855f7", "#06b6d4", "#ec4899", "#f97316"]}>
+											{(c) => (
+												<button
+													onClick={() => { setGlobalSetting("accentColor", c); haptic("light"); }}
+													class={`h-7 w-7 rounded-full transition active:scale-90 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+														appStore.globalSettings.accentColor === c ? "ring-2 ring-text ring-offset-2 ring-offset-surface-2" : ""
+													}`}
+													style={{ background: c }}
+													aria-label={`Accent color ${c}`}
+												/>
+											)}
+										</For>
+									</div>
+									<p class="ml-auto text-xs text-text-secondary">{appStore.globalSettings.accentColor}</p>
 								</div>
 							</div>
 							<div>
@@ -304,15 +319,23 @@ export function SettingsModal(props: { onClose: () => void }) {
 							<span class="i-mdi-view-grid h-4 w-4" /> Layout
 						</h3>
 						<div class="space-y-2 rounded-2xl bg-surface-2 p-4">
-							<p class="text-xs text-text-secondary">Reorder navigation tabs. Changes apply immediately.</p>
+							<p class="text-xs text-text-secondary">Reorder or hide navigation tabs. Changes apply immediately.</p>
 							<div class="max-h-60 space-y-1 overflow-y-auto">
 								<For each={appStore.tabOrder}>
 									{(tab, index) => {
 										const meta = subTabMeta[tab];
+										const hidden = () => appStore.hiddenTabs.includes(tab);
 										return (
-											<div class="flex items-center gap-2 rounded-xl border border-border bg-surface p-2">
+											<div class={`flex items-center gap-2 rounded-xl border border-border bg-surface p-2 ${hidden() ? "opacity-50" : ""}`}>
 												<span class={`${meta.icon} h-4 w-4 text-text-secondary`} />
 												<span class="flex-1 text-sm text-text">{meta.label}</span>
+												<button
+													onClick={() => { toggleTabHidden(tab); haptic("light"); }}
+													class="rounded-lg p-1.5 text-text-secondary transition hover:bg-surface-3"
+													aria-label={hidden() ? `Show ${meta.label}` : `Hide ${meta.label}`}
+												>
+													<span class={`${hidden() ? "i-mdi-eye-off-outline" : "i-mdi-eye-outline"} h-4 w-4`} />
+												</button>
 												<button
 													onClick={() => {
 														const order = [...appStore.tabOrder];
@@ -352,6 +375,43 @@ export function SettingsModal(props: { onClose: () => void }) {
 								aria-label="Reset tab order"
 							>
 								Reset to default
+							</Button>
+						</div>
+					</section>
+
+					{/* Cloud sync */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-cloud-sync h-4 w-4" /> Cloud sync
+						</h3>
+						<div class="space-y-3 rounded-2xl bg-surface-2 p-4">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-text">Cross-device sync</p>
+									<p class="text-xs text-text-secondary">
+										{syncing()
+											? "Syncing…"
+											: syncFailed()
+												? "Sync failed — will retry automatically"
+												: lastSyncedAt()
+													? `Last synced ${new Date(lastSyncedAt()!).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}`
+													: "Not synced yet"}
+									</p>
+								</div>
+								<span
+									class={`h-2.5 w-2.5 rounded-full ${syncFailed() ? "bg-danger" : lastSyncedAt() ? "bg-success" : "bg-text-secondary/40"}`}
+									aria-label={syncFailed() ? "Sync failed" : lastSyncedAt() ? "Synced" : "Not synced"}
+								/>
+							</div>
+							<Button
+								onClick={async () => { await syncNow(); showStatus(syncFailed() ? "Sync failed" : "Synced", syncFailed() ? "error" : "success"); }}
+								variant="secondary"
+								size="sm"
+								class="w-full"
+								aria-label="Sync now"
+								disabled={syncing()}
+							>
+								<span class={`i-mdi-cloud-sync mr-2 h-4 w-4 ${syncing() ? "animate-spin" : ""}`} /> Sync now
 							</Button>
 						</div>
 					</section>

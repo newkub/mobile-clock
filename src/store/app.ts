@@ -79,6 +79,7 @@ export interface AppState {
   timeEntries: TimeEntry[];
   goals: Goal[];
   tabOrder: ClockSubTab[];
+  hiddenTabs: ClockSubTab[];
   elevenLabsKey: string;
   settingsOpen: boolean;
   /** Currently ringing in-app alert (web only; native uses OS notifications). */
@@ -116,6 +117,7 @@ export const initialState: AppState = {
     "breathing",
     "time",
   ],
+  hiddenTabs: [],
   elevenLabsKey: "",
   settingsOpen: false,
   ringing: null,
@@ -168,6 +170,9 @@ function loadState(): Partial<AppState> {
       const missing = validSubTabs.filter((t) => !filtered.includes(t));
       clean.tabOrder = [...filtered, ...missing];
     }
+    if (Array.isArray(parsed.hiddenTabs)) {
+      clean.hiddenTabs = parsed.hiddenTabs.filter((t): t is ClockSubTab => validSubTabs.includes(t));
+    }
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
     if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
     return clean;
@@ -199,6 +204,37 @@ let persistTimer: ReturnType<typeof setTimeout> | null = null;
 export function queuePersist() {
   if (persistTimer) clearTimeout(persistTimer);
   persistTimer = setTimeout(persist, 200);
+}
+
+/** Tabs currently visible in navigation (tabOrder minus hiddenTabs). */
+export function visibleTabOrder(): ClockSubTab[] {
+  return store.tabOrder.filter((t) => !store.hiddenTabs.includes(t));
+}
+
+/** Hide/show a navigation tab. Keeps at least one tab visible and moves
+ *  the active tab away if it gets hidden. */
+export function toggleTabHidden(tab: ClockSubTab) {
+  const hidden = store.hiddenTabs.includes(tab);
+  if (!hidden && visibleTabOrder().length <= 1) return;
+  setStore("hiddenTabs", (prev) => (hidden ? prev.filter((t) => t !== tab) : [...prev, tab]));
+  if (store.hiddenTabs.includes(store.clockSubTab)) {
+    const first = visibleTabOrder()[0];
+    if (first) setStore("clockSubTab", first);
+  }
+  queuePersist();
+}
+
+/** Clear all locally persisted data and reload into a fresh state. */
+export function resetAllData() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem("wrikka-stopwatch-state");
+    localStorage.removeItem("wrikka-timer-state");
+    localStorage.removeItem("wrikka-pomodoro-state");
+  } catch {
+    // ignore
+  }
+  window.location.reload();
 }
 
 export { store as appStore, setStore };

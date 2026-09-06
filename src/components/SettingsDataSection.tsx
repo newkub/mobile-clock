@@ -1,4 +1,4 @@
-import { exportAppData, importAppData } from "../store/actions";
+import { exportAppData, importAppData, resetAllData } from "../store/app";
 import { haptic } from "../lib/capacitor";
 import { showStatus } from "../lib/status";
 import { Button } from "./Button";
@@ -62,6 +62,23 @@ export function SettingsDataSection() {
             aria-label="Upload backup file"
           />
         </div>
+      </div>
+
+      <div class="space-y-3 rounded-2xl border border-danger/30 bg-surface-2 p-4">
+        <p class="text-xs text-text-secondary">Delete all local data (alarms, habits, history, settings) and start fresh. Cloud data is not deleted.</p>
+        <Button
+          onClick={() => {
+            if (!window.confirm("Delete all local data? This cannot be undone.")) return;
+            haptic("heavy");
+            resetAllData();
+          }}
+          variant="secondary"
+          size="sm"
+          class="w-full border-danger/40 text-danger hover:bg-danger/10"
+          aria-label="Reset all data"
+        >
+          <span class="i-mdi-delete-forever h-4 w-4" /> Reset all data
+        </Button>
       </div>
 
       <Show when={getInstallPrompt()}>

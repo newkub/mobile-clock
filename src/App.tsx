@@ -1,5 +1,5 @@
 import { createEffect, createSignal, onCleanup, onMount, Switch, Match } from "solid-js";
-import { appStore, setClockSubTab, closeSettings } from "./store/app";
+import { appStore, setClockSubTab, closeSettings, visibleTabOrder } from "./store/app";
 import { startAlarmWatcher } from "./lib/notifications";
 import { haptic } from "./lib/capacitor";
 import { syncTheme } from "./lib/theme";
@@ -111,7 +111,7 @@ export default function App() {
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
       if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      const order = appStore.tabOrder;
+      const order = visibleTabOrder();
       const idx = order.indexOf(appStore.clockSubTab);
       const next = dx < 0 ? idx + 1 : idx - 1;
       if (next < 0 || next >= order.length) return;
@@ -134,7 +134,7 @@ export default function App() {
       if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) return;
       if (appStore.settingsOpen || appStore.ringing) return;
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      const order = appStore.tabOrder;
+      const order = visibleTabOrder();
       const idx = order.indexOf(appStore.clockSubTab);
       const next = e.key === "ArrowRight" ? idx + 1 : idx - 1;
       if (next < 0 || next >= order.length) return;

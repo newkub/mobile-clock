@@ -1,5 +1,5 @@
 import { For } from "solid-js";
-import { appStore, setClockSubTab } from "../store/app";
+import { appStore, setClockSubTab, visibleTabOrder } from "../store/app";
 import { haptic } from "../lib/capacitor";
 import { subTabMeta } from "./nav-meta";
 
@@ -9,7 +9,7 @@ export function TabBar() {
       class="glass mx-3 mb-2 flex max-w-full gap-1 overflow-x-auto rounded-3xl p-1.5 pb-safe md:hidden"
       aria-label="Clock features"
     >
-      <For each={appStore.tabOrder}>
+      <For each={visibleTabOrder()}>
         {(id) => {
           const meta = subTabMeta[id];
           const active = () => id === appStore.clockSubTab;
