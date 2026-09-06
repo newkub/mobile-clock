@@ -3,12 +3,14 @@ import { appStore, setClockSubTab, closeSettings, SUB_TAB_ORDER } from "./store/
 import { startAlarmWatcher } from "./lib/notifications";
 import { haptic } from "./lib/capacitor";
 import { syncTheme } from "./lib/theme";
+import { loadHabits } from "./lib/habits";
 import { Header } from "./components/Header";
 import { TabBar } from "./components/TabBar";
 import { StatusToast } from "./components/StatusToast";
 import { SettingsModal } from "./components/SettingsModal";
 import { AlarmRingOverlay } from "./components/AlarmRingOverlay";
 import { OnboardingOverlay } from "./components/OnboardingOverlay";
+import { OverviewTab } from "./tabs/clock-sub/Overview";
 import { ClockView } from "./tabs/clock-sub/Clock";
 import { AlarmTab } from "./tabs/clock-sub/Alarm";
 import { StopwatchTab } from "./tabs/clock-sub/Stopwatch";
@@ -17,6 +19,7 @@ import { PomodoroTab } from "./tabs/clock-sub/Pomodoro";
 import { ReminderTab } from "./tabs/clock-sub/Reminder";
 import { FocusTab } from "./tabs/clock-sub/Focus";
 import { StatsTab } from "./tabs/clock-sub/Stats";
+import { HabitsTab } from "./tabs/clock-sub/Habits";
 import { AmbientTab } from "./tabs/clock-sub/Ambient";
 import { BreathingTab } from "./tabs/clock-sub/Breathing";
 
@@ -26,6 +29,11 @@ export default function App() {
 
   // Track network status and show a small offline banner.
   const [online, setOnline] = createSignal(navigator.onLine);
+
+  onMount(() => {
+    loadHabits();
+  });
+
   onMount(() => {
     const on = () => setOnline(true);
     const off = () => setOnline(false);
@@ -110,7 +118,8 @@ export default function App() {
       <StatusToast />
       <main id="clock-main" class="tab-content flex-1 overflow-y-auto">
         <div class="animate-fade mx-auto h-full w-full max-w-6xl">
-        <Switch fallback={<ClockView />}>
+        <Switch fallback={<OverviewTab />}>
+          <Match when={appStore.clockSubTab === "overview"}><OverviewTab /></Match>
           <Match when={appStore.clockSubTab === "clock"}><ClockView /></Match>
           <Match when={appStore.clockSubTab === "alarm"}><AlarmTab /></Match>
           <Match when={appStore.clockSubTab === "stopwatch"}><StopwatchTab /></Match>
@@ -119,6 +128,7 @@ export default function App() {
           <Match when={appStore.clockSubTab === "reminder"}><ReminderTab /></Match>
           <Match when={appStore.clockSubTab === "focus"}><FocusTab /></Match>
           <Match when={appStore.clockSubTab === "stats"}><StatsTab /></Match>
+          <Match when={appStore.clockSubTab === "habits"}><HabitsTab /></Match>
           <Match when={appStore.clockSubTab === "ambient"}><AmbientTab /></Match>
           <Match when={appStore.clockSubTab === "breathing"}><BreathingTab /></Match>
         </Switch>

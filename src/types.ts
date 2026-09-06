@@ -1,16 +1,18 @@
 export type Day = "MO" | "TU" | "WE" | "TH" | "FR" | "SA" | "SU";
 
 export type ClockSubTab =
+  | "overview"
   | "clock"
   | "alarm"
   | "stopwatch"
   | "timer"
   | "pomodoro"
   | "reminder"
+  | "focus"
   | "stats"
+  | "habits"
   | "ambient"
-  | "breathing"
-  | "focus";
+  | "breathing";
 
 export interface Alarm {
   id: string;
@@ -63,4 +65,25 @@ export interface FocusTask {
   sortOrder: number;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface Habit {
+  id: string;
+  title: string;
+  color: string;
+  icon: string;
+  frequency: string;
+  /** ISO dates when the habit should be active (frequency === weekly) or completed (daily). */
+  targetDays: string[];
+  sortOrder: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface HabitCompletion {
+  id: string;
+  habitId: string;
+  date: string; // ISO date
+  completedAt: number;
+  note: string | null;
 }

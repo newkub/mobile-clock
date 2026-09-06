@@ -4,6 +4,7 @@ export default defineConfig({
   safelist: [
     "i-mdi-cog",
     "i-mdi-cog-outline",
+    "i-mdi-view-dashboard-outline",
     "i-mdi-clock-outline",
     "i-mdi-alarm",
     "i-mdi-timer-outline",
@@ -12,8 +13,13 @@ export default defineConfig({
     "i-mdi-bell-outline",
     "i-mdi-checkbox-marked-circle-plus-outline",
     "i-mdi-chart-bar",
+    "i-mdi-calendar-check",
     "i-mdi-weather-rainy",
     "i-mdi-weather-windy",
+    "i-mdi-check-circle",
+    "i-mdi-plus",
+    "i-mdi-delete",
+    "i-mdi-fire",
   ],
   content: {
     filesystem: ["./src/**/*.{html,js,ts,jsx,tsx}"],

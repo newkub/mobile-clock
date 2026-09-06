@@ -1,5 +1,5 @@
 import { createStore } from "solid-js/store";
-import type { Alarm, ClockSubTab, FocusTask, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
+import type { Alarm, ClockSubTab, FocusTask, Habit, HabitCompletion, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
 
 export * from "../types";
 
@@ -61,6 +61,8 @@ export interface AppState {
   pomodoroSessions: PomodoroSession[];
   worldClocks: WorldClock[];
   focusTasks: FocusTask[];
+  habits: Habit[];
+  habitCompletions: HabitCompletion[];
   elevenLabsKey: string;
   settingsOpen: boolean;
   /** Currently ringing in-app alert (web only; native uses OS notifications). */
@@ -70,7 +72,7 @@ export interface AppState {
 }
 
 export const initialState: AppState = {
-  clockSubTab: "clock",
+  clockSubTab: "overview",
   globalSettings: defaultGlobal,
   status: null,
   alarms: [],
@@ -79,6 +81,8 @@ export const initialState: AppState = {
   pomodoroSessions: [],
   worldClocks: [],
   focusTasks: [],
+  habits: [],
+  habitCompletions: [],
   elevenLabsKey: "",
   settingsOpen: false,
   ringing: null,
@@ -86,6 +90,7 @@ export const initialState: AppState = {
 };
 
 export const SUB_TAB_ORDER: ClockSubTab[] = [
+  "overview",
   "clock",
   "alarm",
   "stopwatch",
@@ -94,6 +99,7 @@ export const SUB_TAB_ORDER: ClockSubTab[] = [
   "reminder",
   "focus",
   "stats",
+  "habits",
   "ambient",
   "breathing",
 ];
@@ -119,6 +125,8 @@ function loadState(): Partial<AppState> {
     if (Array.isArray(parsed.pomodoroSessions)) clean.pomodoroSessions = parsed.pomodoroSessions;
     if (Array.isArray(parsed.worldClocks)) clean.worldClocks = parsed.worldClocks;
     if (Array.isArray(parsed.focusTasks)) clean.focusTasks = parsed.focusTasks;
+    if (Array.isArray(parsed.habits)) clean.habits = parsed.habits;
+    if (Array.isArray(parsed.habitCompletions)) clean.habitCompletions = parsed.habitCompletions;
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
     if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
     return clean;

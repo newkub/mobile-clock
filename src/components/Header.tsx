@@ -8,14 +8,14 @@ export function Header() {
     <header class="px-5 pb-2 pt-[calc(env(safe-area-inset-top)+1rem)]">
       <div class="mx-auto flex w-full max-w-6xl items-center justify-between gap-4">
         <button
-          onClick={() => { haptic("light"); setClockSubTab("clock"); }}
+          onClick={() => { haptic("light"); setClockSubTab("overview"); }}
           class="flex items-center gap-2.5 rounded-lg text-left transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50"
-          aria-label="Go to clock"
+          aria-label="Go to overview"
         >
           <span class="i-mdi-clock-outline h-7 w-7 text-primary" aria-hidden="true" />
           <div>
             <h1 class="text-xl font-bold leading-tight text-text">
-              {subTabTitles[appStore.clockSubTab] ?? "Clock"}
+              {subTabTitles[appStore.clockSubTab] ?? "Overview"}
             </h1>
             <p class="text-xs text-text-secondary">
               {new Date().toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" })}
@@ -24,7 +24,7 @@ export function Header() {
         </button>
 
         {/* Top navigation — tablet and desktop only (mobile uses the bottom TabBar) */}
-        <nav class="hidden min-w-0 flex-1 items-center justify-center gap-6 overflow-x-auto px-4 md:flex" aria-label="Clock features">
+        <nav class="hidden min-w-0 flex-1 items-center justify-center gap-4 overflow-x-auto px-2 md:flex" aria-label="Clock features">
           <For each={SUB_TAB_ORDER}>
             {(id) => {
               const meta = subTabMeta[id];
@@ -36,9 +36,10 @@ export function Header() {
                     active() ? "text-primary" : "text-text-secondary hover:text-text"
                   }`}
                   aria-current={active() ? "page" : undefined}
+                  aria-label={meta.label}
                 >
                   <span class={`${meta.icon} h-4 w-4`} aria-hidden="true" />
-                  {meta.label}
+                  <span class="hidden lg:inline">{meta.label}</span>
                 </button>
               );
             }}
