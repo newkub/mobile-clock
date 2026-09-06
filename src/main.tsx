@@ -4,16 +4,21 @@ import "./theme.css";
 import "./index.css";
 import App from "./App";
 import { initCapacitor } from "./lib/capacitor";
-import { appStore } from "./store/app";
 import { requestNotificationPermission } from "./lib/notifications";
 import { initPwaInstall } from "./lib/pwa";
+import { syncTheme, syncMotionPreference } from "./lib/theme";
 
 initCapacitor().catch(() => null);
 
 requestNotificationPermission().catch(() => null);
 
-// Apply persisted theme before first paint.
-document.documentElement.classList.toggle("dark", appStore.globalSettings.theme !== "light");
+// Apply persisted theme before first paint and listen for OS changes.
+syncTheme();
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => syncTheme());
+
+// Respect reduced-motion OS preference.
+syncMotionPreference();
+window.matchMedia("(prefers-reduced-motion: reduce)").addEventListener("change", () => syncMotionPreference());
 
 // Register service worker for PWA notifications
 if ("serviceWorker" in navigator) {

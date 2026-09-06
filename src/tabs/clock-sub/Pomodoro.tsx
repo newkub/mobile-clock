@@ -3,7 +3,7 @@ import { CircleProgress } from "../../components/CircleProgress";
 import { Button } from "../../components/Button";
 import { useShortcuts } from "../../hooks/use-shortcuts";
 import { haptic } from "../../lib/capacitor";
-import { playBeep } from "../../lib/audio";
+import { playFinishAlert } from "../../lib/audio";
 import { formatDuration } from "../../lib/time";
 import { appStore, addPomodoroSession } from "../../store/app";
 
@@ -101,7 +101,7 @@ createRoot(() => {
 
   createEffect(() => {
     if (running() && remaining() <= 0) {
-      if (appStore.globalSettings.sound) playBeep(880, 0.8, "triangle");
+      playFinishAlert("pomodoro");
       haptic("success");
 
       if (phase() === "focus") {

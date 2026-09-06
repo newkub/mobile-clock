@@ -2,7 +2,9 @@ import { createSignal, For } from "solid-js";
 import { appStore, setGlobalSetting, setElevenLabsKey } from "../store/app";
 import { showStatus } from "../lib/status";
 import { haptic } from "../lib/capacitor";
+import { syncTheme } from "../lib/theme";
 import { requestNotificationPermission } from "../lib/notifications";
+import { playFinishAlert } from "../lib/audio";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { Switch } from "./Switch";
@@ -12,8 +14,9 @@ import { SettingsDataSection } from "./SettingsDataSection";
 export function SettingsModal(props: { onClose: () => void }) {
 	const [key, setKey] = createSignal(appStore.elevenLabsKey);
 
-	function setTheme(theme: "dark" | "light") {
+	function setTheme(theme: "dark" | "light" | "auto") {
 		setGlobalSetting("theme", theme);
+		syncTheme();
 		haptic("light");
 	}
 
@@ -33,6 +36,12 @@ export function SettingsModal(props: { onClose: () => void }) {
 
 	function setTimeFormat(format: "12h" | "24h") {
 		setGlobalSetting("timeFormat", format);
+		haptic("light");
+	}
+
+	function setSoundTheme(theme: "beep" | "chime" | "digital" | "soft") {
+		setGlobalSetting("soundTheme", theme);
+		if (appStore.globalSettings.sound) playFinishAlert("timer");
 		haptic("light");
 	}
 
@@ -58,21 +67,29 @@ export function SettingsModal(props: { onClose: () => void }) {
 							<span class="i-mdi-palette h-4 w-4" /> Theme
 						</h3>
 						<div class="flex gap-2">
-							<For each={["dark", "light"] as const}>
-								{(t) => (
-									<button
-										onClick={() => setTheme(t)}
-										class={`flex flex-1 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-semibold capitalize transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-											appStore.globalSettings.theme === t
-												? "border-primary bg-primary/10 text-primary"
-												: "border-border bg-surface-2 text-text-secondary"
-										}`}
-										aria-label={`Use ${t} theme`}
-									>
-										<span class={`${t === "dark" ? "i-mdi-weather-night" : "i-mdi-white-balance-sunny"} h-4 w-4`} />
-										{t}
-									</button>
-								)}
+							<For each={["dark", "light", "auto"] as const}>
+								{(t) => {
+									const icon =
+										t === "dark"
+											? "i-mdi-weather-night"
+											: t === "light"
+												? "i-mdi-white-balance-sunny"
+												: "i-mdi-theme-light-dark";
+									return (
+										<button
+											onClick={() => setTheme(t)}
+											class={`flex flex-1 items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-semibold capitalize transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+												appStore.globalSettings.theme === t
+													? "border-primary bg-primary/10 text-primary"
+													: "border-border bg-surface-2 text-text-secondary"
+											}`}
+											aria-label={`Use ${t} theme`}
+										>
+											<span class={`${icon} h-4 w-4`} />
+											{t}
+										</button>
+									);
+								}}
 							</For>
 						</div>
 					</section>
@@ -94,6 +111,26 @@ export function SettingsModal(props: { onClose: () => void }) {
 									aria-label="Toggle timer sounds"
 								/>
 							</div>
+							<div>
+								<p class="text-sm font-medium text-text">Sound theme</p>
+								<div class="mt-2 grid grid-cols-2 gap-2">
+									<For each={["beep", "chime", "digital", "soft"] as const}>
+										{(t) => (
+											<button
+												onClick={() => setSoundTheme(t)}
+												class={`rounded-xl py-2 text-sm font-medium capitalize transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+													appStore.globalSettings.soundTheme === t
+														? "bg-primary text-white"
+														: "bg-surface-3 text-text-secondary hover:text-text"
+												}`}
+												aria-label={`Use ${t} sound`}
+											>
+												{t}
+											</button>
+											)}
+										</For>
+									</div>
+								</div>
 							<div class="flex items-center justify-between">
 								<div>
 									<p class="text-sm font-medium text-text">Haptics</p>

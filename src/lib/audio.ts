@@ -1,3 +1,5 @@
+import { appStore } from "../store/app";
+
 let audioCtx: AudioContext | null = null;
 
 function ensureCtx(): AudioContext {
@@ -24,6 +26,38 @@ export function playBeep(frequency = 880, duration = 0.12, type: OscillatorType 
   osc.stop(ctx.currentTime + duration);
 }
 
+export type SoundKind = "timer" | "alarm" | "pomodoro";
+
+const BASE_FREQ: Record<SoundKind, number> = {
+  timer: 660,
+  alarm: 880,
+  pomodoro: 784,
+};
+
+/** Play the user-selected alert sound for a given event kind. */
+export function playFinishAlert(kind: SoundKind = "timer") {
+  if (!appStore.globalSettings.sound) return;
+  const theme = appStore.globalSettings.soundTheme;
+  const base = BASE_FREQ[kind];
+
+  switch (theme) {
+    case "chime":
+      playBeep(base, 0.35, "sine");
+      setTimeout(() => playBeep(base * 2, 0.6, "triangle"), 180);
+      break;
+    case "digital":
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => playBeep(base * 1.25, 0.1, "square"), i * 110);
+      }
+      break;
+    case "soft":
+      playBeep(base / 2, 1.0, "sine");
+      break;
+    default:
+      playBeep(base, 0.5, "sine");
+  }
+}
+
 export function playAlarmPreview(url: string, loop = false): HTMLAudioElement {
   const audio = new Audio(url);
   audio.loop = loop;
@@ -38,4 +72,3 @@ export function stopAudio(audio?: HTMLAudioElement | null) {
     audio.currentTime = 0;
   }
 }
-

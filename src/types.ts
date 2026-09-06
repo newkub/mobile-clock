@@ -42,3 +42,9 @@ export interface PomodoroSession {
   completedCycles: number;
   totalFocusSeconds: number;
 }
+
+export interface WorldClock {
+  id: string;
+  zone: string;
+  label: string;
+}

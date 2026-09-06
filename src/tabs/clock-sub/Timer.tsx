@@ -6,7 +6,7 @@ import { EmptyState } from "../../components/EmptyState";
 import { useShortcuts } from "../../hooks/use-shortcuts";
 import { haptic } from "../../lib/capacitor";
 import { showStatus } from "../../lib/status";
-import { playBeep } from "../../lib/audio";
+import { playFinishAlert } from "../../lib/audio";
 import { formatDuration } from "../../lib/time";
 import { appStore, addTimerPreset, removeTimerPreset, type TimerPreset } from "../../store/app";
 
@@ -91,7 +91,7 @@ createRoot(() => {
   createEffect(() => {
     if (running() && remaining() <= 0) {
       setRunning(false);
-      if (appStore.globalSettings.sound) playBeep(660, 1.2, "sine");
+      playFinishAlert("timer");
       haptic("success");
       showStatus("Timer finished", "success");
     }

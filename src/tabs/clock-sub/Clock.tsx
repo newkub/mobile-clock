@@ -1,13 +1,14 @@
-import { createSignal, createMemo, onMount, onCleanup, Show } from "solid-js";
+import { createSignal, createMemo, onMount, onCleanup, Show, For } from "solid-js";
 import { AnalogClock } from "../../components/AnalogClock";
 import { appStore } from "../../store/app";
 import { useIsMd } from "../../hooks/use-media-query";
-import { formatShortTime } from "../../lib/time";
-import { setClockSubTab } from "../../store/actions";
+import { formatShortTime, formatTimeInZone } from "../../lib/time";
+import { setClockSubTab, removeWorldClock } from "../../store/actions";
 import { haptic } from "../../lib/capacitor";
 import { showStatus } from "../../lib/status";
 import { quickStartTimer } from "./Timer";
 import { quickStartFocus } from "./Pomodoro";
+import { AddWorldClockModal } from "../../components/AddWorldClockModal";
 
 function gmtOffset(d: Date): string {
   const mins = -d.getTimezoneOffset();
@@ -20,6 +21,7 @@ function gmtOffset(d: Date): string {
 
 export function ClockView() {
   const [now, setNow] = createSignal(new Date());
+  const [isAdding, setIsAdding] = createSignal(false);
   const isMd = useIsMd();
 
   onMount(() => {
@@ -104,7 +106,46 @@ export function ClockView() {
             <span class="i-mdi-brain h-4 w-4" /> Focus 25m
           </button>
         </div>
+
+        <div class="mt-2 w-full">
+          <div class="mb-2 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-text-secondary">World clocks</h3>
+            <button
+              onClick={() => { haptic("light"); setIsAdding(true); }}
+              class="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2.5 py-1 text-xs font-medium text-text-secondary transition hover:text-text focus:outline-none focus:ring-2 focus:ring-primary/50"
+              aria-label="Add world clock"
+            >
+              <span class="i-mdi-plus h-3.5 w-3.5" /> Add
+            </button>
+          </div>
+          <div class="grid w-full grid-cols-2 gap-2 md:grid-cols-3">
+            <For each={appStore.worldClocks}>
+                {(clock) => (
+                  <div class="flex flex-col rounded-2xl bg-surface-2 p-3 text-left">
+                    <div class="flex items-start justify-between">
+                      <p class="truncate text-xs font-medium text-text">{clock.label}</p>
+                      <button
+                        onClick={() => { haptic("light"); removeWorldClock(clock.id); }}
+                        class="ml-1 rounded-full p-1 text-text-secondary transition hover:text-danger focus:outline-none focus:ring-2 focus:ring-primary/50"
+                        aria-label={`Remove ${clock.label}`}
+                      >
+                        <span class="i-mdi-close h-3 w-3" />
+                      </button>
+                    </div>
+                    <p class="mt-1 text-lg font-bold tabular-nums text-text">{formatTimeInZone(now(), clock.zone)}</p>
+                    <p class="text-[10px] text-text-secondary">
+                      {now().toLocaleDateString(undefined, { timeZone: clock.zone, day: "numeric", month: "short" })}
+                    </p>
+                  </div>
+                )}
+              </For>
+            </div>
+          </div>
       </div>
+
+      <Show when={isAdding()}>
+        <AddWorldClockModal onClose={() => setIsAdding(false)} />
+      </Show>
     </div>
   );
 }
