@@ -15,6 +15,7 @@ import { StopwatchTab } from "./tabs/clock-sub/Stopwatch";
 import { TimerTab } from "./tabs/clock-sub/Timer";
 import { PomodoroTab } from "./tabs/clock-sub/Pomodoro";
 import { ReminderTab } from "./tabs/clock-sub/Reminder";
+import { FocusTab } from "./tabs/clock-sub/Focus";
 import { StatsTab } from "./tabs/clock-sub/Stats";
 import { AmbientTab } from "./tabs/clock-sub/Ambient";
 import { BreathingTab } from "./tabs/clock-sub/Breathing";
@@ -116,6 +117,7 @@ export default function App() {
           <Match when={appStore.clockSubTab === "timer"}><TimerTab /></Match>
           <Match when={appStore.clockSubTab === "pomodoro"}><PomodoroTab /></Match>
           <Match when={appStore.clockSubTab === "reminder"}><ReminderTab /></Match>
+          <Match when={appStore.clockSubTab === "focus"}><FocusTab /></Match>
           <Match when={appStore.clockSubTab === "stats"}><StatsTab /></Match>
           <Match when={appStore.clockSubTab === "ambient"}><AmbientTab /></Match>
           <Match when={appStore.clockSubTab === "breathing"}><BreathingTab /></Match>

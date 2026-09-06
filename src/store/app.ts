@@ -1,5 +1,5 @@
 import { createStore } from "solid-js/store";
-import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
+import type { Alarm, ClockSubTab, FocusTask, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
 
 export * from "../types";
 
@@ -60,6 +60,7 @@ export interface AppState {
   reminders: Reminder[];
   pomodoroSessions: PomodoroSession[];
   worldClocks: WorldClock[];
+  focusTasks: FocusTask[];
   elevenLabsKey: string;
   settingsOpen: boolean;
   /** Currently ringing in-app alert (web only; native uses OS notifications). */
@@ -77,6 +78,7 @@ export const initialState: AppState = {
   reminders: [],
   pomodoroSessions: [],
   worldClocks: [],
+  focusTasks: [],
   elevenLabsKey: "",
   settingsOpen: false,
   ringing: null,
@@ -90,6 +92,7 @@ export const SUB_TAB_ORDER: ClockSubTab[] = [
   "timer",
   "pomodoro",
   "reminder",
+  "focus",
   "stats",
   "ambient",
   "breathing",
@@ -115,6 +118,7 @@ function loadState(): Partial<AppState> {
     if (Array.isArray(parsed.reminders)) clean.reminders = parsed.reminders;
     if (Array.isArray(parsed.pomodoroSessions)) clean.pomodoroSessions = parsed.pomodoroSessions;
     if (Array.isArray(parsed.worldClocks)) clean.worldClocks = parsed.worldClocks;
+    if (Array.isArray(parsed.focusTasks)) clean.focusTasks = parsed.focusTasks;
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
     if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
     return clean;

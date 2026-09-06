@@ -9,7 +9,8 @@ export type ClockSubTab =
   | "reminder"
   | "stats"
   | "ambient"
-  | "breathing";
+  | "breathing"
+  | "focus";
 
 export interface Alarm {
   id: string;
@@ -50,4 +51,16 @@ export interface WorldClock {
   id: string;
   zone: string;
   label: string;
+}
+
+export interface FocusTask {
+  id: string;
+  title: string;
+  completed: boolean;
+  completedAt: number | null;
+  totalFocusSeconds: number;
+  completedPomodoros: number;
+  sortOrder: number;
+  createdAt: number;
+  updatedAt: number;
 }

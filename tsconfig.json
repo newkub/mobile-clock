@@ -23,7 +23,8 @@
     "noUncheckedSideEffectImports": true,
     "types": [
       "@capacitor/core",
-      "vite/client"
+      "vite/client",
+      "@cloudflare/workers-types"
     ]
   },
   "include": [

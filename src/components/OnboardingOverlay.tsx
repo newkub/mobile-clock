@@ -7,7 +7,7 @@ const steps = [
   {
     icon: "i-mdi-clock-outline",
     title: "Welcome to Wrikka Clock",
-    body: "A local-first clock, alarm, timer, stopwatch, pomodoro, and reminder app — all private on your device. It also includes Stats insights, Ambient sounds, and a guided Breathing tab.",
+    body: "A local-first clock, alarm, timer, stopwatch, pomodoro, and reminder app — all private on your device. It also includes a Focus task list, Stats insights, Ambient sounds, and a guided Breathing tab.",
   },
   {
     icon: "i-mdi-gesture-swipe",
