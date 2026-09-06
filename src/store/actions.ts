@@ -1,5 +1,5 @@
 import { produce } from "solid-js/store";
-import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset } from "../types";
+import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
 import { appStore, initialState, setStore, queuePersist, mergeWithDefault, type GlobalSettings } from "./app";
 
 export function setClockSubTab(tab: ClockSubTab) {
@@ -109,6 +109,16 @@ export function closeSettings() {
 
 export function completeOnboarding() {
   setStore("hasCompletedOnboarding", true);
+  queuePersist();
+}
+
+export function addWorldClock(clock: WorldClock) {
+  setStore(produce((s) => { s.worldClocks.push(clock); }));
+  queuePersist();
+}
+
+export function removeWorldClock(id: string) {
+  setStore("worldClocks", (clocks) => clocks.filter((c) => c.id !== id));
   queuePersist();
 }
 

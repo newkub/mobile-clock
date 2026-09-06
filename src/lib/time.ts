@@ -28,3 +28,16 @@ export function formatHourMinute(hour: number, minute: number): string {
   d.setHours(hour, minute, 0, 0);
   return formatShortTime(d);
 }
+
+/** Format the current time in a specific IANA timezone. */
+export function formatTimeInZone(d: Date, zone: string): string {
+  const hour12 = appStore.globalSettings.timeFormat === "12h";
+  return d.toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12,
+    timeZone: zone,
+  });
+}
+

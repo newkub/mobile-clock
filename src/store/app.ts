@@ -1,10 +1,10 @@
 import { createStore } from "solid-js/store";
-import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset } from "../types";
+import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
 
 export * from "../types";
 
 export interface GlobalSettings {
-  theme: "dark" | "light";
+  theme: "dark" | "light" | "auto";
   haptics: boolean;
   sound: boolean;
   notifications: boolean;
@@ -14,6 +14,8 @@ export interface GlobalSettings {
   pomodoroLong: number;
   /** "12h" or "24h" — controls time display across the app. */
   timeFormat: "12h" | "24h";
+  /** Alert sound style. */
+  soundTheme: "beep" | "chime" | "digital" | "soft";
 }
 
 export interface StatusMessage {
@@ -30,7 +32,7 @@ export interface RingingAlert {
 const STORAGE_KEY = "wrikka-clock-store";
 
 const defaultGlobal: GlobalSettings = {
-  theme: "dark",
+  theme: "auto",
   haptics: true,
   sound: true,
   notifications: true,
@@ -38,6 +40,7 @@ const defaultGlobal: GlobalSettings = {
   pomodoroShort: 5,
   pomodoroLong: 15,
   timeFormat: "24h",
+  soundTheme: "beep",
 };
 
 const defaultPresets: TimerPreset[] = [
@@ -56,6 +59,7 @@ export interface AppState {
   timerPresets: TimerPreset[];
   reminders: Reminder[];
   pomodoroSessions: PomodoroSession[];
+  worldClocks: WorldClock[];
   elevenLabsKey: string;
   settingsOpen: boolean;
   /** Currently ringing in-app alert (web only; native uses OS notifications). */
@@ -72,6 +76,7 @@ export const initialState: AppState = {
   timerPresets: defaultPresets,
   reminders: [],
   pomodoroSessions: [],
+  worldClocks: [],
   elevenLabsKey: "",
   settingsOpen: false,
   ringing: null,
@@ -106,6 +111,7 @@ function loadState(): Partial<AppState> {
     if (Array.isArray(parsed.timerPresets)) clean.timerPresets = parsed.timerPresets;
     if (Array.isArray(parsed.reminders)) clean.reminders = parsed.reminders;
     if (Array.isArray(parsed.pomodoroSessions)) clean.pomodoroSessions = parsed.pomodoroSessions;
+    if (Array.isArray(parsed.worldClocks)) clean.worldClocks = parsed.worldClocks;
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
     if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
     return clean;

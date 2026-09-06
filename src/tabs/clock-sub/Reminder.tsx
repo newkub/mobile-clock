@@ -1,5 +1,6 @@
 import { createSignal, createMemo, For, onMount, Show } from "solid-js";
 import { Button } from "../../components/Button";
+import { Input } from "../../components/Input";
 import { EmptyState } from "../../components/EmptyState";
 import {
   appStore,
@@ -15,9 +16,11 @@ import { showStatus } from "../../lib/status";
 import { hashId } from "../../lib/hash";
 import { ReminderCard } from "./reminder/ReminderCard";
 import { AddReminderModal } from "./reminder/AddReminderModal";
+import { repeatLabels } from "./reminder/repeatLabels";
 
 export function ReminderTab() {
   const [isAdding, setIsAdding] = createSignal(false);
+  const [search, setSearch] = createSignal("");
   const [now, setNow] = createSignal(new Date());
 
   onMount(() => {
@@ -59,6 +62,17 @@ export function ReminderTab() {
     sorted().filter((r) => new Date(`${r.date}T${r.time}`) < now())
   );
 
+  const filtered = (list: Reminder[]) => {
+    const q = search().trim().toLowerCase();
+    if (!q) return list;
+    return list.filter((r) => {
+      const text = `${r.title} ${r.date} ${r.time} ${repeatLabels[r.repeat]}`.toLowerCase();
+      return text.includes(q);
+    });
+  };
+  const futureFiltered = createMemo(() => filtered(future()));
+  const pastFiltered = createMemo(() => filtered(past()));
+
   async function handleToggle(r: Reminder) {
     const enabled = !r.enabled;
     toggleReminder(r.id);
@@ -86,7 +100,17 @@ export function ReminderTab() {
   return (
     <div class="tab-content h-full overflow-y-auto p-5 pb-28 md:pb-8">
       <div class="mx-auto flex max-w-3xl flex-col gap-4">
-        <Show when={future().length === 0}>
+        <Show when={appStore.reminders.length > 0}>
+          <Input
+            value={search()}
+            onChange={setSearch}
+            placeholder="Search reminders..."
+            class="w-full"
+            aria-label="Search reminders"
+          />
+        </Show>
+
+        <Show when={future().length === 0 && !search()}>
           <EmptyState
             icon="i-mdi-bell"
             title="No upcoming reminders"
@@ -94,8 +118,12 @@ export function ReminderTab() {
           />
         </Show>
 
+        <Show when={search() && futureFiltered().length === 0 && pastFiltered().length === 0}>
+          <p class="text-center text-sm text-text-secondary">No reminders match your search</p>
+        </Show>
+
         <div class="grid gap-4 md:grid-cols-2">
-          <For each={future()}>
+          <For each={futureFiltered()}>
             {(r) => (
               <ReminderCard
                 reminder={r}
@@ -110,7 +138,7 @@ export function ReminderTab() {
         <Show when={past().length > 0}>
           <h3 class="text-sm font-semibold text-text-secondary">Past</h3>
           <div class="grid gap-4 md:grid-cols-2">
-            <For each={past()}>
+            <For each={pastFiltered()}>
               {(r) => (
                 <ReminderCard
                   reminder={r}

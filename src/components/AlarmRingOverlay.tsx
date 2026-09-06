@@ -2,7 +2,7 @@ import { createSignal, onCleanup, onMount, Show } from "solid-js";
 import { appStore, setStore, addReminder } from "../store/app";
 import { Button } from "./Button";
 import { haptic } from "../lib/capacitor";
-import { playBeep } from "../lib/audio";
+import { playFinishAlert } from "../lib/audio";
 import { showStatus } from "../lib/status";
 import { formatShortTime } from "../lib/time";
 
@@ -17,11 +17,11 @@ export function AlarmRingOverlay() {
     haptic("heavy");
     const clock = setInterval(() => setNow(new Date()), 1000);
 
-    // Repeat a short beep while the alert is ringing.
+    // Repeat the selected alert sound while the alert is ringing.
     let beep: ReturnType<typeof setInterval> | null = null;
     if (appStore.globalSettings.sound) {
-      playBeep(880, 0.5, "sine");
-      beep = setInterval(() => playBeep(880, 0.5, "sine"), 1500);
+      playFinishAlert("alarm");
+      beep = setInterval(() => playFinishAlert("alarm"), 1800);
     }
 
     onCleanup(() => {

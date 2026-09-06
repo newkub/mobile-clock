@@ -1,7 +1,8 @@
-import { createEffect, onCleanup, onMount, Switch, Match } from "solid-js";
+import { createEffect, createSignal, onCleanup, onMount, Switch, Match } from "solid-js";
 import { appStore, setClockSubTab, closeSettings, SUB_TAB_ORDER } from "./store/app";
 import { startAlarmWatcher } from "./lib/notifications";
 import { haptic } from "./lib/capacitor";
+import { syncTheme } from "./lib/theme";
 import { Header } from "./components/Header";
 import { TabBar } from "./components/TabBar";
 import { StatusToast } from "./components/StatusToast";
@@ -16,9 +17,20 @@ import { PomodoroTab } from "./tabs/clock-sub/Pomodoro";
 import { ReminderTab } from "./tabs/clock-sub/Reminder";
 
 export default function App() {
-  // Apply theme to <html> whenever the setting changes.
-  createEffect(() => {
-    document.documentElement.classList.toggle("dark", appStore.globalSettings.theme !== "light");
+  // Apply theme to <html> whenever the setting or OS preference changes.
+  createEffect(syncTheme);
+
+  // Track network status and show a small offline banner.
+  const [online, setOnline] = createSignal(navigator.onLine);
+  onMount(() => {
+    const on = () => setOnline(true);
+    const off = () => setOnline(false);
+    window.addEventListener("online", on);
+    window.addEventListener("offline", off);
+    onCleanup(() => {
+      window.removeEventListener("online", on);
+      window.removeEventListener("offline", off);
+    });
   });
 
   // Keep the web notification watcher armed: it restarts whenever the
@@ -108,6 +120,13 @@ export default function App() {
       {appStore.settingsOpen && <SettingsModal onClose={closeSettings} />}
       <AlarmRingOverlay />
       {!appStore.hasCompletedOnboarding && !appStore.ringing && <OnboardingOverlay />}
+
+      {!online() && (
+        <div class="fixed bottom-2 left-1/2 z-[70] w-[calc(100%-2rem)] max-w-md -translate-x-1/2 rounded-2xl border border-warning/30 bg-warning/10 p-3 text-center text-sm text-warning" role="status">
+          <span class="i-mdi-wifi-off -mt-0.5 mr-1.5 inline-block h-4 w-4 align-middle" />
+          You are offline. Alarms and timers keep running locally.
+        </div>
+      )}
     </div>
   );
 }
