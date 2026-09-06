@@ -18,6 +18,18 @@ body {
   background:
     radial-gradient(120% 80% at 50% -10%, hsl(var(--color-primary) / 0.08), transparent 60%),
     hsl(var(--color-bg));
+  background-size: 200% 200%;
+  animation: bg-shift 40s ease-in-out infinite;
+}
+
+@keyframes bg-shift {
+  0%,
+  100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
 }
 
 .glass {

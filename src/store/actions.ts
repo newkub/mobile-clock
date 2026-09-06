@@ -122,6 +122,40 @@ export function removeWorldClock(id: string) {
   queuePersist();
 }
 
+export function addNote(text: string) {
+  const note = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, text: text.trim(), createdAt: Date.now() };
+  setStore(produce((s) => { s.notes.push(note); }));
+  queuePersist();
+  return note;
+}
+
+export function removeNote(id: string) {
+  setStore("notes", (notes) => notes.filter((n) => n.id !== id));
+  queuePersist();
+}
+
+export function updateNote(id: string, text: string) {
+  setStore("notes", (notes) => notes.map((n) => (n.id === id ? { ...n, text: text.trim() } : n)));
+  queuePersist();
+}
+
+export function startSleep() {
+  const session = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, start: Date.now(), end: null };
+  setStore(produce((s) => { s.sleepSessions.push(session); }));
+  queuePersist();
+  return session;
+}
+
+export function endSleep(id: string) {
+  setStore("sleepSessions", (sessions) => sessions.map((s) => (s.id === id ? { ...s, end: Date.now() } : s)));
+  queuePersist();
+}
+
+export function setTabOrder(order: ClockSubTab[]) {
+  setStore("tabOrder", order);
+  queuePersist();
+}
+
 export function resetStore() {
   setStore(initialState);
   queuePersist();

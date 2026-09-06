@@ -1,9 +1,10 @@
 import { createEffect, createSignal, onCleanup, onMount, Switch, Match } from "solid-js";
-import { appStore, setClockSubTab, closeSettings, SUB_TAB_ORDER } from "./store/app";
+import { appStore, setClockSubTab, closeSettings } from "./store/app";
 import { startAlarmWatcher } from "./lib/notifications";
 import { haptic } from "./lib/capacitor";
 import { syncTheme } from "./lib/theme";
 import { loadHabits } from "./lib/habits";
+import { showStatus } from "./lib/status";
 import { Header } from "./components/Header";
 import { TabBar } from "./components/TabBar";
 import { StatusToast } from "./components/StatusToast";
@@ -20,6 +21,8 @@ import { ReminderTab } from "./tabs/clock-sub/Reminder";
 import { FocusTab } from "./tabs/clock-sub/Focus";
 import { StatsTab } from "./tabs/clock-sub/Stats";
 import { HabitsTab } from "./tabs/clock-sub/Habits";
+import { NotesTab } from "./tabs/clock-sub/Notes";
+import { SleepTab } from "./tabs/clock-sub/Sleep";
 import { AmbientTab } from "./tabs/clock-sub/Ambient";
 import { BreathingTab } from "./tabs/clock-sub/Breathing";
 
@@ -32,6 +35,28 @@ export default function App() {
 
   onMount(() => {
     loadHabits();
+  });
+
+  // Eye break reminder while the app is open.
+  let eyeBreakTimer: number | null = null;
+  createEffect(() => {
+    if (eyeBreakTimer) {
+      clearInterval(eyeBreakTimer);
+      eyeBreakTimer = null;
+    }
+    if (!appStore.globalSettings.eyeBreakEnabled) return;
+    const interval = Math.max(5, appStore.globalSettings.eyeBreakInterval) * 60 * 1000;
+    eyeBreakTimer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+        new Notification("Eye break", { body: "Look at something 20 feet away for 20 seconds." });
+      } else {
+        showStatus("Eye break: look away for 20 seconds", "info");
+      }
+    }, interval);
+  });
+  onCleanup(() => {
+    if (eyeBreakTimer) clearInterval(eyeBreakTimer);
   });
 
   onMount(() => {
@@ -81,11 +106,12 @@ export default function App() {
       const dx = t.clientX - startX;
       const dy = t.clientY - startY;
       if (Math.abs(dx) < 64 || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-      const idx = SUB_TAB_ORDER.indexOf(appStore.clockSubTab);
+      const order = appStore.tabOrder;
+      const idx = order.indexOf(appStore.clockSubTab);
       const next = dx < 0 ? idx + 1 : idx - 1;
-      if (next < 0 || next >= SUB_TAB_ORDER.length) return;
+      if (next < 0 || next >= order.length) return;
       haptic("light");
-      setClockSubTab(SUB_TAB_ORDER[next]);
+      setClockSubTab(order[next]);
     };
     const el = document.getElementById("clock-main");
     el?.addEventListener("touchstart", onStart, { passive: true });
@@ -103,10 +129,11 @@ export default function App() {
       if (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable) return;
       if (appStore.settingsOpen || appStore.ringing) return;
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      const idx = SUB_TAB_ORDER.indexOf(appStore.clockSubTab);
+      const order = appStore.tabOrder;
+      const idx = order.indexOf(appStore.clockSubTab);
       const next = e.key === "ArrowRight" ? idx + 1 : idx - 1;
-      if (next < 0 || next >= SUB_TAB_ORDER.length) return;
-      setClockSubTab(SUB_TAB_ORDER[next]);
+      if (next < 0 || next >= order.length) return;
+      setClockSubTab(order[next]);
     };
     window.addEventListener("keydown", onKey);
     onCleanup(() => window.removeEventListener("keydown", onKey));
@@ -131,6 +158,8 @@ export default function App() {
           <Match when={appStore.clockSubTab === "habits"}><HabitsTab /></Match>
           <Match when={appStore.clockSubTab === "ambient"}><AmbientTab /></Match>
           <Match when={appStore.clockSubTab === "breathing"}><BreathingTab /></Match>
+          <Match when={appStore.clockSubTab === "notes"}><NotesTab /></Match>
+          <Match when={appStore.clockSubTab === "sleep"}><SleepTab /></Match>
         </Switch>
         </div>
       </main>

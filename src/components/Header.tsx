@@ -1,5 +1,5 @@
 import { For } from "solid-js";
-import { appStore, openSettings, setClockSubTab, SUB_TAB_ORDER } from "../store/app";
+import { appStore, openSettings, setClockSubTab } from "../store/app";
 import { haptic } from "../lib/capacitor";
 import { subTabMeta, subTabTitles } from "./nav-meta";
 
@@ -25,7 +25,7 @@ export function Header() {
 
         {/* Top navigation — tablet and desktop only (mobile uses the bottom TabBar) */}
         <nav class="hidden min-w-0 flex-1 items-center justify-center gap-4 overflow-x-auto px-2 md:flex" aria-label="Clock features">
-          <For each={SUB_TAB_ORDER}>
+          <For each={appStore.tabOrder}>
             {(id) => {
               const meta = subTabMeta[id];
               const active = () => id === appStore.clockSubTab;

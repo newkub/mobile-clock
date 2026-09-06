@@ -12,7 +12,9 @@ export type ClockSubTab =
   | "stats"
   | "habits"
   | "ambient"
-  | "breathing";
+  | "breathing"
+  | "notes"
+  | "sleep";
 
 export interface Alarm {
   id: string;

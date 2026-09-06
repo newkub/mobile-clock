@@ -16,6 +16,13 @@ export interface GlobalSettings {
   timeFormat: "12h" | "24h";
   /** Alert sound style. */
   soundTheme: "beep" | "chime" | "digital" | "soft";
+  /** Accent color used for primary UI highlights. */
+  accentColor: string;
+  /** Base font size in px (affects rem-based sizes). */
+  fontSize: number;
+  /** Eye break reminder. */
+  eyeBreakEnabled: boolean;
+  eyeBreakInterval: number;
 }
 
 export interface StatusMessage {
@@ -41,6 +48,10 @@ const defaultGlobal: GlobalSettings = {
   pomodoroLong: 15,
   timeFormat: "24h",
   soundTheme: "beep",
+  accentColor: "#6366f1",
+  fontSize: 16,
+  eyeBreakEnabled: false,
+  eyeBreakInterval: 20,
 };
 
 const defaultPresets: TimerPreset[] = [
@@ -63,6 +74,9 @@ export interface AppState {
   focusTasks: FocusTask[];
   habits: Habit[];
   habitCompletions: HabitCompletion[];
+  notes: { id: string; text: string; createdAt: number }[];
+  sleepSessions: { id: string; start: number; end: number | null }[];
+  tabOrder: ClockSubTab[];
   elevenLabsKey: string;
   settingsOpen: boolean;
   /** Currently ringing in-app alert (web only; native uses OS notifications). */
@@ -83,6 +97,24 @@ export const initialState: AppState = {
   focusTasks: [],
   habits: [],
   habitCompletions: [],
+  notes: [],
+  sleepSessions: [],
+  tabOrder: [
+    "overview",
+    "clock",
+    "alarm",
+    "stopwatch",
+    "timer",
+    "pomodoro",
+    "reminder",
+    "focus",
+    "stats",
+    "habits",
+    "ambient",
+    "breathing",
+    "notes",
+    "sleep",
+  ],
   elevenLabsKey: "",
   settingsOpen: false,
   ringing: null,
@@ -102,6 +134,8 @@ export const SUB_TAB_ORDER: ClockSubTab[] = [
   "habits",
   "ambient",
   "breathing",
+  "notes",
+  "sleep",
 ];
 
 const validSubTabs: ClockSubTab[] = SUB_TAB_ORDER;
@@ -127,6 +161,12 @@ function loadState(): Partial<AppState> {
     if (Array.isArray(parsed.focusTasks)) clean.focusTasks = parsed.focusTasks;
     if (Array.isArray(parsed.habits)) clean.habits = parsed.habits;
     if (Array.isArray(parsed.habitCompletions)) clean.habitCompletions = parsed.habitCompletions;
+    if (Array.isArray(parsed.notes)) clean.notes = parsed.notes;
+    if (Array.isArray(parsed.sleepSessions)) clean.sleepSessions = parsed.sleepSessions;
+    if (Array.isArray(parsed.tabOrder)) {
+      const filtered = parsed.tabOrder.filter((t): t is ClockSubTab => validSubTabs.includes(t));
+      if (filtered.length > 0) clean.tabOrder = filtered;
+    }
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
     if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
     return clean;

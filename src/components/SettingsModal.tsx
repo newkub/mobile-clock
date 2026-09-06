@@ -1,5 +1,6 @@
-import { createSignal, For } from "solid-js";
-import { appStore, setGlobalSetting, setElevenLabsKey } from "../store/app";
+import { createSignal, For, Show } from "solid-js";
+import { appStore, setGlobalSetting, setElevenLabsKey, setTabOrder, initialState } from "../store/app";
+import { subTabMeta } from "./nav-meta";
 import { showStatus } from "../lib/status";
 import { haptic } from "../lib/capacitor";
 import { syncTheme } from "../lib/theme";
@@ -91,6 +92,44 @@ export function SettingsModal(props: { onClose: () => void }) {
 									);
 								}}
 							</For>
+						</div>
+					</section>
+
+					{/* Appearance */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-brush-variant h-4 w-4" /> Appearance
+						</h3>
+						<div class="space-y-4 rounded-2xl bg-surface-2 p-4">
+							<div>
+								<label class="mb-1 block text-sm font-medium text-text">Accent color</label>
+								<div class="flex items-center gap-3">
+									<input
+										type="color"
+										value={appStore.globalSettings.accentColor}
+										onInput={(e) => setGlobalSetting("accentColor", e.currentTarget.value)}
+										class="h-10 w-10 cursor-pointer rounded-lg border border-border bg-transparent"
+										aria-label="Accent color"
+									/>
+									<p class="text-xs text-text-secondary">{appStore.globalSettings.accentColor}</p>
+								</div>
+							</div>
+							<div>
+								<label class="mb-1 block text-sm font-medium text-text">Font size</label>
+								<div class="flex items-center gap-3">
+									<input
+										type="range"
+										min={14}
+										max={20}
+										step={1}
+										value={appStore.globalSettings.fontSize}
+										onInput={(e) => setGlobalSetting("fontSize", parseInt(e.currentTarget.value))}
+										class="flex-1"
+										aria-label="Font size"
+									/>
+									<p class="text-xs text-text-secondary">{appStore.globalSettings.fontSize}px</p>
+								</div>
+							</div>
 						</div>
 					</section>
 
@@ -222,6 +261,98 @@ export function SettingsModal(props: { onClose: () => void }) {
 									</div>
 								)}
 							</For>
+						</div>
+					</section>
+
+					{/* Wellness */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-eye h-4 w-4" /> Wellness
+						</h3>
+						<div class="space-y-3 rounded-2xl bg-surface-2 p-4">
+							<div class="flex items-center justify-between">
+								<div>
+									<p class="text-sm font-medium text-text">Eye break reminder</p>
+									<p class="text-xs text-text-secondary">Notify every N minutes to rest your eyes</p>
+								</div>
+								<Switch
+									checked={appStore.globalSettings.eyeBreakEnabled}
+									onChange={(v) => setGlobalSetting("eyeBreakEnabled", v)}
+									aria-label="Toggle eye break reminder"
+								/>
+							</div>
+							<Show when={appStore.globalSettings.eyeBreakEnabled}>
+								<div class="flex items-center gap-3">
+									<label class="text-xs text-text-secondary">Interval (min)</label>
+									<input
+										type="number"
+										min={5}
+										max={120}
+										value={appStore.globalSettings.eyeBreakInterval}
+										onInput={(e) => setGlobalSetting("eyeBreakInterval", Math.max(5, Math.min(120, parseInt(e.currentTarget.value) || 20)))}
+										class="w-20 rounded-xl border border-border bg-surface-3 px-2 py-2 text-center text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/20"
+										aria-label="Eye break interval"
+									/>
+								</div>
+							</Show>
+						</div>
+					</section>
+
+					{/* Layout */}
+					<section>
+						<h3 class="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wide text-text-secondary">
+							<span class="i-mdi-view-grid h-4 w-4" /> Layout
+						</h3>
+						<div class="space-y-2 rounded-2xl bg-surface-2 p-4">
+							<p class="text-xs text-text-secondary">Reorder navigation tabs. Changes apply immediately.</p>
+							<div class="max-h-60 space-y-1 overflow-y-auto">
+								<For each={appStore.tabOrder}>
+									{(tab, index) => {
+										const meta = subTabMeta[tab];
+										return (
+											<div class="flex items-center gap-2 rounded-xl border border-border bg-surface p-2">
+												<span class={`${meta.icon} h-4 w-4 text-text-secondary`} />
+												<span class="flex-1 text-sm text-text">{meta.label}</span>
+												<button
+													onClick={() => {
+														const order = [...appStore.tabOrder];
+														const [item] = order.splice(index(), 1);
+														order.splice(index() - 1, 0, item);
+														setTabOrder(order);
+													}}
+													disabled={index() === 0}
+													class="rounded-lg p-1.5 text-text-secondary transition hover:bg-surface-3 disabled:opacity-30"
+													aria-label="Move up"
+												>
+													<span class="i-mdi-chevron-up h-4 w-4" />
+												</button>
+												<button
+													onClick={() => {
+														const order = [...appStore.tabOrder];
+														const [item] = order.splice(index(), 1);
+														order.splice(index() + 1, 0, item);
+														setTabOrder(order);
+													}}
+													disabled={index() === appStore.tabOrder.length - 1}
+													class="rounded-lg p-1.5 text-text-secondary transition hover:bg-surface-3 disabled:opacity-30"
+													aria-label="Move down"
+												>
+													<span class="i-mdi-chevron-down h-4 w-4" />
+												</button>
+											</div>
+										);
+									}}
+								</For>
+							</div>
+							<Button
+								onClick={() => { setTabOrder([...initialState.tabOrder]); haptic("light"); }}
+								variant="secondary"
+								size="sm"
+								class="w-full"
+								aria-label="Reset tab order"
+							>
+								Reset to default
+							</Button>
 						</div>
 					</section>
 
