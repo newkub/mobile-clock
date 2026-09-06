@@ -109,7 +109,7 @@ export default function App() {
       <Header />
       <StatusToast />
       <main id="clock-main" class="tab-content flex-1 overflow-y-auto">
-        <div class="animate-fade mx-auto h-full w-full max-w-5xl">
+        <div class="animate-fade mx-auto h-full w-full max-w-6xl">
         <Switch fallback={<ClockView />}>
           <Match when={appStore.clockSubTab === "clock"}><ClockView /></Match>
           <Match when={appStore.clockSubTab === "alarm"}><AlarmTab /></Match>

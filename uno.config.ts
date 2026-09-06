@@ -1,6 +1,20 @@
 import { defineConfig, presetIcons, presetWind4, transformerDirectives, transformerVariantGroup } from "unocss";
 
 export default defineConfig({
+  safelist: [
+    "i-mdi-cog",
+    "i-mdi-cog-outline",
+    "i-mdi-clock-outline",
+    "i-mdi-alarm",
+    "i-mdi-timer-outline",
+    "i-mdi-timer-sand",
+    "i-mdi-brain",
+    "i-mdi-bell-outline",
+    "i-mdi-checkbox-marked-circle-plus-outline",
+    "i-mdi-chart-bar",
+    "i-mdi-weather-rainy",
+    "i-mdi-weather-windy",
+  ],
   content: {
     filesystem: ["./src/**/*.{html,js,ts,jsx,tsx}"],
   },
