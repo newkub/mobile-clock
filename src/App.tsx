@@ -4,6 +4,7 @@ import { startAlarmWatcher } from "./lib/notifications";
 import { haptic } from "./lib/capacitor";
 import { syncTheme } from "./lib/theme";
 import { loadHabits } from "./lib/habits";
+import { pullState, schedulePush, SYNC_KEYS } from "./lib/sync";
 import { showStatus } from "./lib/status";
 import { Header } from "./components/Header";
 import { TabBar } from "./components/TabBar";
@@ -23,6 +24,9 @@ import { StatsTab } from "./tabs/clock-sub/Stats";
 import { HabitsTab } from "./tabs/clock-sub/Habits";
 import { NotesTab } from "./tabs/clock-sub/Notes";
 import { SleepTab } from "./tabs/clock-sub/Sleep";
+import { TimeTab } from "./tabs/clock-sub/Time";
+import { GoalsTab } from "./tabs/clock-sub/Goals";
+import { CalendarTab } from "./tabs/clock-sub/Calendar";
 import { AmbientTab } from "./tabs/clock-sub/Ambient";
 import { BreathingTab } from "./tabs/clock-sub/Breathing";
 
@@ -35,6 +39,13 @@ export default function App() {
 
   onMount(() => {
     loadHabits();
+    void pullState();
+  });
+
+  // Auto-push state to cloud when synced keys change (debounced).
+  createEffect(() => {
+    for (const key of SYNC_KEYS) void appStore[key];
+    schedulePush();
   });
 
   // Eye break reminder while the app is open.
@@ -160,6 +171,9 @@ export default function App() {
           <Match when={appStore.clockSubTab === "breathing"}><BreathingTab /></Match>
           <Match when={appStore.clockSubTab === "notes"}><NotesTab /></Match>
           <Match when={appStore.clockSubTab === "sleep"}><SleepTab /></Match>
+          <Match when={appStore.clockSubTab === "time"}><TimeTab /></Match>
+          <Match when={appStore.clockSubTab === "goals"}><GoalsTab /></Match>
+          <Match when={appStore.clockSubTab === "calendar"}><CalendarTab /></Match>
         </Switch>
         </div>
       </main>

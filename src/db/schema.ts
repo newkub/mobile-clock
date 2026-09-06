@@ -90,3 +90,12 @@ export const insertHabitCompletionSchema = z.object({
 export const deleteHabitCompletionSchema = z.object({
   id: z.string().min(1),
 });
+
+export const syncState = sqliteTable("sync_state", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at").notNull(),
+});
+
+export const syncKeySchema = z.object({ key: z.string().min(1).max(64) });
+export const syncSetSchema = z.object({ key: z.string().min(1).max(64), value: z.string() });

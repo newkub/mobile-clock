@@ -12,6 +12,9 @@ import {
   updateHabitSchema,
   insertHabitCompletionSchema,
   deleteHabitCompletionSchema,
+  syncState,
+  syncKeySchema,
+  syncSetSchema,
 } from "./db/schema";
 import type { Env } from "./db/env";
 
@@ -193,6 +196,29 @@ export const deleteHabitCompletion = base
     return { ok: true };
   });
 
+// Sync (key-value)
+
+export const getSync = base
+  .input(syncKeySchema)
+  .handler(async ({ input, context }) => {
+    const db = drizzle(context.env.DB);
+    const rows = await db.select().from(syncState).where(eq(syncState.key, input.key)).limit(1);
+    const row = rows[0];
+    return row ? { key: row.key, value: row.value, updatedAt: row.updatedAt } : null;
+  });
+
+export const setSync = base
+  .input(syncSetSchema)
+  .handler(async ({ input, context }) => {
+    const db = drizzle(context.env.DB);
+    const now = Date.now();
+    await db
+      .insert(syncState)
+      .values({ key: input.key, value: input.value, updatedAt: now })
+      .onConflictDoUpdate({ target: syncState.key, set: { value: input.value, updatedAt: now } });
+    return { ok: true };
+  });
+
 export const router = {
   tasks: {
     list: listTasks,
@@ -208,6 +234,10 @@ export const router = {
     listCompletions: listHabitCompletions,
     complete: createHabitCompletion,
     uncomplete: deleteHabitCompletion,
+  },
+  sync: {
+    get: getSync,
+    set: setSync,
   },
 };
 

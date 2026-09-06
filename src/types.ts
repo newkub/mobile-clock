@@ -14,7 +14,10 @@ export type ClockSubTab =
   | "ambient"
   | "breathing"
   | "notes"
-  | "sleep";
+  | "sleep"
+  | "time"
+  | "goals"
+  | "calendar";
 
 export interface Alarm {
   id: string;
@@ -88,4 +91,21 @@ export interface HabitCompletion {
   date: string; // ISO date
   completedAt: number;
   note: string | null;
+}
+
+export interface TimeEntry {
+  id: string;
+  project: string;
+  start: number;
+  end: number | null;
+}
+
+export interface Goal {
+  id: string;
+  title: string;
+  target: number;
+  current: number;
+  unit: string;
+  createdAt: number;
+  updatedAt: number;
 }

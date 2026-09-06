@@ -32,6 +32,13 @@ export default defineConfig({
     "i-mdi-pencil",
     "i-mdi-check",
     "i-mdi-view-dashboard-outline",
+    "i-mdi-clock-time-four-outline",
+    "i-mdi-target",
+    "i-mdi-calendar",
+    "i-mdi-chevron-left",
+    "i-mdi-chevron-right",
+    "i-mdi-minus",
+    "i-mdi-volume-off",
   ],
   content: {
     filesystem: ["./src/**/*.{html,js,ts,jsx,tsx}"],

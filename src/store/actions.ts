@@ -1,5 +1,5 @@
 import { produce } from "solid-js/store";
-import type { Alarm, ClockSubTab, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
+import type { Alarm, ClockSubTab, Goal, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
 import { appStore, initialState, setStore, queuePersist, mergeWithDefault, type GlobalSettings } from "./app";
 
 export function setClockSubTab(tab: ClockSubTab) {
@@ -153,6 +153,40 @@ export function endSleep(id: string) {
 
 export function setTabOrder(order: ClockSubTab[]) {
   setStore("tabOrder", order);
+  queuePersist();
+}
+
+export function startTimeEntry(project: string) {
+  const entry = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, project: project.trim(), start: Date.now(), end: null };
+  setStore(produce((s) => { s.timeEntries.push(entry); }));
+  queuePersist();
+  return entry;
+}
+
+export function endTimeEntry(id: string) {
+  setStore("timeEntries", (entries) => entries.map((e) => (e.id === id ? { ...e, end: Date.now() } : e)));
+  queuePersist();
+}
+
+export function removeTimeEntry(id: string) {
+  setStore("timeEntries", (entries) => entries.filter((e) => e.id !== id));
+  queuePersist();
+}
+
+export function addGoal(title: string, target: number, unit = "") {
+  const goal = { id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`, title: title.trim(), target, current: 0, unit, createdAt: Date.now(), updatedAt: Date.now() };
+  setStore(produce((s) => { s.goals.push(goal); }));
+  queuePersist();
+  return goal;
+}
+
+export function updateGoal(id: string, patch: Partial<Goal>) {
+  setStore("goals", (goals) => goals.map((g) => (g.id === id ? { ...g, ...patch, updatedAt: Date.now() } : g)));
+  queuePersist();
+}
+
+export function removeGoal(id: string) {
+  setStore("goals", (goals) => goals.filter((g) => g.id !== id));
   queuePersist();
 }
 

@@ -20,6 +20,24 @@ const [scale, setScale] = createSignal(1);
 const [animMs, setAnimMs] = createSignal(600);
 const [reducedMotion, setReducedMotion] = createSignal(false);
 const [elapsed, setElapsed] = createSignal(0);
+const [voiceGuide, setVoiceGuide] = createSignal(false);
+
+const VOICE_KEY = "wrikka-breathing-voice";
+try {
+  const raw = localStorage.getItem(VOICE_KEY);
+  if (raw === "1") setVoiceGuide(true);
+} catch {}
+
+function speak(text: string) {
+  if (!voiceGuide() || typeof speechSynthesis === "undefined") return;
+  try {
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.0;
+    u.pitch = 1.0;
+    speechSynthesis.speak(u);
+  } catch {}
+}
 
 // Respect the OS reduced-motion preference (the global .reduce-motion class
 // also collapses CSS transitions, but we skip scale changes entirely here).
@@ -47,6 +65,7 @@ function enterPhase(idx: number) {
   const target = PHASE_META[ph.kind].scale;
   if (!reducedMotion() && target !== null) setScale(target);
   buzz("light");
+  speak(ph.label);
 }
 
 // 1s countdown ticker kept alive outside the component so a session continues
@@ -127,21 +146,37 @@ export function BreathingTab() {
           <p class="mt-0.5 text-xs text-text-secondary">{pattern().tagline}</p>
         </div>
 
-        {/* Pattern selector */}
-        <div class="flex flex-wrap justify-center gap-1 rounded-2xl bg-surface-2 p-1.5">
-          <For each={PATTERNS}>
-            {(p) => (
-              <button
-                onClick={() => select(p.id)}
-                class={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
-                  patternId() === p.id ? "bg-primary text-white" : "text-text-secondary"
-                }`}
-                aria-label={`Select ${p.name} breathing pattern`}
-              >
-                <span class={`${p.icon} h-4 w-4`} /> {p.name}
-              </button>
-            )}
-          </For>
+        {/* Pattern selector + voice guide */}
+        <div class="flex flex-col items-center gap-2">
+          <div class="flex flex-wrap justify-center gap-1 rounded-2xl bg-surface-2 p-1.5">
+            <For each={PATTERNS}>
+              {(p) => (
+                <button
+                  onClick={() => select(p.id)}
+                  class={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                    patternId() === p.id ? "bg-primary text-white" : "text-text-secondary"
+                  }`}
+                  aria-label={`Select ${p.name} breathing pattern`}
+                >
+                  <span class={`${p.icon} h-4 w-4`} /> {p.name}
+                </button>
+              )}
+            </For>
+          </div>
+          <button
+            onClick={() => {
+              setVoiceGuide(!voiceGuide());
+              try { localStorage.setItem(VOICE_KEY, voiceGuide() ? "1" : "0"); } catch {}
+              haptic("light");
+            }}
+            class={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+              voiceGuide() ? "bg-primary/15 text-primary" : "bg-surface-2 text-text-secondary"
+            }`}
+            aria-label={voiceGuide() ? "Disable voice guide" : "Enable voice guide"}
+          >
+            <span class={`h-4 w-4 ${voiceGuide() ? "i-mdi-volume-high" : "i-mdi-volume-off"}`} />
+            {voiceGuide() ? "Voice guide on" : "Voice guide off"}
+          </button>
         </div>
 
         {/* Breath circle */}

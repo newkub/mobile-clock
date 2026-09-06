@@ -1,5 +1,5 @@
 import { createStore } from "solid-js/store";
-import type { Alarm, ClockSubTab, FocusTask, Habit, HabitCompletion, PomodoroSession, Reminder, TimerPreset, WorldClock } from "../types";
+import type { Alarm, ClockSubTab, FocusTask, Goal, Habit, HabitCompletion, PomodoroSession, Reminder, TimeEntry, TimerPreset, WorldClock } from "../types";
 
 export * from "../types";
 
@@ -76,6 +76,8 @@ export interface AppState {
   habitCompletions: HabitCompletion[];
   notes: { id: string; text: string; createdAt: number }[];
   sleepSessions: { id: string; start: number; end: number | null }[];
+  timeEntries: TimeEntry[];
+  goals: Goal[];
   tabOrder: ClockSubTab[];
   elevenLabsKey: string;
   settingsOpen: boolean;
@@ -99,6 +101,8 @@ export const initialState: AppState = {
   habitCompletions: [],
   notes: [],
   sleepSessions: [],
+  timeEntries: [],
+  goals: [],
   tabOrder: [
     "overview",
     "clock",
@@ -114,6 +118,9 @@ export const initialState: AppState = {
     "breathing",
     "notes",
     "sleep",
+    "time",
+    "goals",
+    "calendar",
   ],
   elevenLabsKey: "",
   settingsOpen: false,
@@ -136,6 +143,9 @@ export const SUB_TAB_ORDER: ClockSubTab[] = [
   "breathing",
   "notes",
   "sleep",
+  "time",
+  "goals",
+  "calendar",
 ];
 
 const validSubTabs: ClockSubTab[] = SUB_TAB_ORDER;
@@ -163,9 +173,12 @@ function loadState(): Partial<AppState> {
     if (Array.isArray(parsed.habitCompletions)) clean.habitCompletions = parsed.habitCompletions;
     if (Array.isArray(parsed.notes)) clean.notes = parsed.notes;
     if (Array.isArray(parsed.sleepSessions)) clean.sleepSessions = parsed.sleepSessions;
+    if (Array.isArray(parsed.timeEntries)) clean.timeEntries = parsed.timeEntries;
+    if (Array.isArray(parsed.goals)) clean.goals = parsed.goals;
     if (Array.isArray(parsed.tabOrder)) {
       const filtered = parsed.tabOrder.filter((t): t is ClockSubTab => validSubTabs.includes(t));
-      if (filtered.length > 0) clean.tabOrder = filtered;
+      const missing = validSubTabs.filter((t) => !filtered.includes(t));
+      clean.tabOrder = [...filtered, ...missing];
     }
     if (typeof parsed.elevenLabsKey === "string") clean.elevenLabsKey = parsed.elevenLabsKey;
     if (typeof parsed.hasCompletedOnboarding === "boolean") clean.hasCompletedOnboarding = parsed.hasCompletedOnboarding;
