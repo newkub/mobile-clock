@@ -1,7 +1,6 @@
 import { For, Show, createMemo } from "solid-js";
 import { appStore, setClockSubTab } from "../../store/app";
 import { haptic } from "../../lib/capacitor";
-import { formatDuration } from "../../lib/time";
 import { computeHabitStreak, isHabitCompletedOn } from "../../lib/habits";
 
 export function OverviewTab() {
@@ -22,9 +21,6 @@ export function OverviewTab() {
       hour12: appStore.globalSettings.timeFormat === "12h",
     });
 
-  const doneTasks = () => appStore.focusTasks.filter((t) => t.completed).length;
-  const totalFocus = () => appStore.focusTasks.reduce((s, t) => s + t.totalFocusSeconds, 0);
-
   const today = createMemo(() => new Date().toISOString().slice(0, 10));
   const habitsToday = createMemo(() =>
     appStore.habits.filter((h) => isHabitCompletedOn(h, today())),
@@ -33,6 +29,8 @@ export function OverviewTab() {
     appStore.pomodoroSessions
       .filter((s) => s.date === today())
       .reduce((sum, s) => sum + s.completedCycles, 0);
+  const alarmsOn = () => appStore.alarms.filter((a) => a.enabled).length;
+  const remindersOn = () => appStore.reminders.filter((r) => r.enabled).length;
 
   const nextAlarm = () => {
     const active = appStore.alarms.filter((a) => a.enabled).sort((a, b) => {
@@ -43,10 +41,10 @@ export function OverviewTab() {
   };
 
   const quickActions = [
-    { id: "pomodoro" as const, label: "Focus", icon: "i-mdi-brain", color: "text-primary" },
-    { id: "focus" as const, label: "Tasks", icon: "i-mdi-checkbox-marked-circle-plus-outline", color: "text-success" },
+    { id: "pomodoro" as const, label: "Pomodoro", icon: "i-mdi-brain", color: "text-primary" },
     { id: "habits" as const, label: "Habits", icon: "i-mdi-calendar-check", color: "text-warning" },
-    { id: "stats" as const, label: "Stats", icon: "i-mdi-chart-bar", color: "text-accent" },
+    { id: "ambient" as const, label: "Ambient", icon: "i-mdi-weather-rainy", color: "text-success" },
+    { id: "breathing" as const, label: "Breathe", icon: "i-mdi-weather-windy", color: "text-accent" },
   ];
 
   function go(tab: typeof quickActions[number]["id"]) {
@@ -83,11 +81,9 @@ export function OverviewTab() {
 
         <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
           <div class="rounded-2xl bg-surface-2 p-4 text-center">
-            <p class="text-2xl font-bold text-primary">{doneTasks()}</p>
-            <p class="text-xs text-text-secondary">Tasks done</p>
-          </div>
-          <div class="rounded-2xl bg-surface-2 p-4 text-center">
-            <p class="text-2xl font-bold text-success">{habitsToday().length}</p>
+            <p class="text-2xl font-bold text-success">
+              {habitsToday().length}<span class="text-sm font-normal text-text-secondary">/{appStore.habits.length}</span>
+            </p>
             <p class="text-xs text-text-secondary">Habits today</p>
           </div>
           <div class="rounded-2xl bg-surface-2 p-4 text-center">
@@ -95,8 +91,12 @@ export function OverviewTab() {
             <p class="text-xs text-text-secondary">Pomodoros</p>
           </div>
           <div class="rounded-2xl bg-surface-2 p-4 text-center">
-            <p class="text-2xl font-bold text-accent">{formatDuration(totalFocus())}</p>
-            <p class="text-xs text-text-secondary">Focus time</p>
+            <p class="text-2xl font-bold text-primary">{alarmsOn()}</p>
+            <p class="text-xs text-text-secondary">Alarms on</p>
+          </div>
+          <div class="rounded-2xl bg-surface-2 p-4 text-center">
+            <p class="text-2xl font-bold text-accent">{remindersOn()}</p>
+            <p class="text-xs text-text-secondary">Reminders</p>
           </div>
         </div>
 

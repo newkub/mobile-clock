@@ -8,16 +8,10 @@ export type ClockSubTab =
   | "timer"
   | "pomodoro"
   | "reminder"
-  | "focus"
-  | "stats"
   | "habits"
   | "ambient"
   | "breathing"
-  | "notes"
-  | "sleep"
-  | "time"
-  | "goals"
-  | "calendar";
+  | "time";
 
 export interface Alarm {
   id: string;
